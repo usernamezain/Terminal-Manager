@@ -1,0 +1,54 @@
+.statusbar {
+  height: 24px;
+  min-height: 24px;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-12);
+  font-size: 11px;
+  color: var(--text-muted);
+  user-select: none;
+  z-index: 30;
+}
+
+.leftSection,
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+}
+
+.activeDot {
+  background-color: var(--success);
+}
+
+.inactiveDot {
+  background-color: var(--danger);
+}
+
+.warningItem {
+  color: var(--warning, #e6a23c);
+  cursor: help;
+}
+
+.warningTag {
+  background-color: rgba(230, 162, 60, 0.15);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm, 4px);
+  font-weight: 500;
+}
+

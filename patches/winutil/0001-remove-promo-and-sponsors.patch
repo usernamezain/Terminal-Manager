@@ -1,0 +1,9 @@
+--- a/scripts/start.ps1
++++ b/scripts/start.ps1
+@@ -3,5 +3,5 @@
+     Author         : Chris Titus @christitustech
+     Runspace Author: @DeveloperDurp
+-    GitHub         : https://github.com/ChrisTitusTech
++    GitHub         : https://github.com/ChrisTitusTech/winutil
+     Version        : #{replaceme}
+ #>

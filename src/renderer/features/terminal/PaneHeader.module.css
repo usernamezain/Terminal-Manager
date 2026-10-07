@@ -1,0 +1,126 @@
+.header {
+  height: 28px;
+  min-height: 28px;
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-8);
+  font-size: var(--font-size-xs);
+  user-select: none;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.running {
+  background-color: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.spawning {
+  background-color: var(--warning);
+  box-shadow: 0 0 6px var(--warning);
+}
+
+.exited {
+  background-color: var(--text-muted);
+}
+
+.error {
+  background-color: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.title {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  padding: 1px var(--space-4);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.title:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.titleInput {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-xs);
+  height: 20px;
+  outline: none;
+}
+
+.cwdChip {
+  font-family: var(--font-terminal);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.actionButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.actionButton:active {
+  transform: scale(0.95);
+}
