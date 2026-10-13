@@ -1,0 +1,204 @@
+.contextMenuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
+.contextMenu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 220px;
+  max-width: 280px;
+  width: 240px;
+  background: var(--bg-surface, #14161C);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-menu, 0 8px 24px rgba(0, 0, 0, 0.45));
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 13px;
+  outline: none;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+}
+
+.contextMenu::-webkit-scrollbar,
+.submenuPanel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.contextMenu::-webkit-scrollbar-thumb,
+.submenuPanel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.submenuPanel {
+  position: fixed;
+  z-index: 10000;
+  min-width: 220px;
+  max-width: 280px;
+  width: 240px;
+  background: var(--bg-surface, #14161C);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-menu, 0 8px 24px rgba(0, 0, 0, 0.45));
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 13px;
+  outline: none;
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+}
+
+.menuGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-subtle, rgba(255, 255, 255, 0.08));
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+.menuItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 8px;
+  margin: 0 4px;
+  color: var(--text-primary, #EDEDF0);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  box-sizing: border-box;
+  font-size: 13px;
+  gap: 8px;
+  flex-shrink: 0;
+  transition: background 60ms ease, color 60ms ease;
+}
+
+.itemIconSlot {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-secondary, #9DA5B4);
+}
+
+.itemLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.itemTrailingSlot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted, #717886);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.menuItem:hover,
+.menuItem.active,
+.menuItem.focused {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menuItem:hover .itemLabel,
+.menuItem.active .itemLabel,
+.menuItem.focused .itemLabel {
+  color: #FFFFFF;
+}
+
+.menuItem:hover .itemIconSlot,
+.menuItem.active .itemIconSlot,
+.menuItem.focused .itemIconSlot {
+  color: #FFFFFF;
+}
+
+.menuItem:hover .itemTrailingSlot,
+.menuItem.active .itemTrailingSlot,
+.menuItem.focused .itemTrailingSlot {
+  color: var(--text-secondary, #9DA5B4);
+}
+
+.menuItem.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.menuItem.disabled:hover,
+.menuItem.disabled.focused {
+  background: transparent;
+}
+
+.menuItem.disabled .itemLabel {
+  color: var(--text-muted, #717886) !important;
+}
+
+.menuItem.disabled .itemIconSlot {
+  color: var(--text-muted, #717886) !important;
+}
+
+.filterContainer {
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.filterInput {
+  width: 100%;
+  height: 26px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 4px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--text-primary, #EDEDF0);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.filterInput:focus {
+  border-color: var(--accent-primary, #89b4fa);
+}
+
+.emptyHint {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted, #717886);
+  font-style: italic;
+  text-align: center;
+}

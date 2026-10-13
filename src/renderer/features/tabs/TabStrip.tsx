@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkspaceStore } from '../layout/useWorkspaceStore';
-import { ShellInfo } from '../../../shared/types';
-import { Plus, X, Pin, Terminal, Grid, Split, RotateCcw } from 'lucide-react';
+import { useWorkspaceStore as useUIWorkspaceStore } from '../../store/useWorkspaceStore';
+import { useProfilesStore } from '../../store/useProfilesStore';
+import { getAllPanes } from '../layout/treeUtils';
+import { Plus, X, Pin, Terminal, Grid, Split, RotateCcw, Settings, ExternalLink } from 'lucide-react';
 import styles from './TabStrip.module.css';
 
 export const TabStrip: React.FC = () => {
@@ -17,21 +19,30 @@ export const TabStrip: React.FC = () => {
     undoClosePane,
     toastMessage,
     setToast,
+    isBroadcastInput,
   } = useWorkspaceStore();
 
-  const [shells, setShells] = useState<ShellInfo[]>([]);
+  const { profiles, loadProfiles } = useProfilesStore();
+  const { setActiveNavTab } = useUIWorkspaceStore();
+
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [contextMenuTabId, setContextMenuTabId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (window.api?.shells) {
-      window.api.shells.detect().then((detected) => {
-        setShells(detected);
-      });
-    }
-  }, []);
+    loadProfiles();
+  }, [loadProfiles]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
+
+  const handlePopOut = (tabId: string) => {
+    const target = tabs.find((t) => t.id === tabId);
+    if (!target) return;
+    const panes = getAllPanes(target.root);
+    const targetPane = panes.find((p) => p.id === target.focusedPaneId) || panes[0];
+    if (targetPane?.sessionId && window.api?.session) {
+      window.api.session.popOut(targetPane.sessionId);
+    }
+  };
 
   return (
     <div className={styles.tabStrip}>
@@ -62,6 +73,16 @@ export const TabStrip: React.FC = () => {
               )}
               <span className={styles.tabTitle}>{tab.title}</span>
               <button
+                className={styles.popOutBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePopOut(tab.id);
+                }}
+                title="Pop out to standalone window"
+              >
+                <ExternalLink size={11} />
+              </button>
+              <button
                 className={styles.closeBtn}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -77,6 +98,28 @@ export const TabStrip: React.FC = () => {
       </div>
 
       <div className={styles.actionsGroup}>
+        {isBroadcastInput && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '2px 8px',
+              marginRight: '6px',
+              borderRadius: '4px',
+              backgroundColor: 'rgba(234, 179, 8, 0.15)',
+              color: '#FACC15',
+              fontSize: '10px',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              border: '1px solid rgba(234, 179, 8, 0.4)',
+              cursor: 'default',
+            }}
+            title="Broadcast mode is ACTIVE: all input is sent to all tabs"
+          >
+            <span>BROADCASTING</span>
+          </div>
+        )}
         {activeTab && (
           <button
             className={styles.iconBtn}
@@ -98,28 +141,48 @@ export const TabStrip: React.FC = () => {
 
           {showAddDropdown && (
             <div className={styles.dropdownMenu}>
-              <div
-                className={styles.dropdownItem}
-                onClick={() => {
-                  newTab();
-                  setShowAddDropdown(false);
-                }}
-              >
-                <Terminal size={14} color="#6C8CFF" /> Default Profile
-              </div>
-              <div className={styles.dropdownDivider} />
-              {shells.map((s) => (
+              {profiles.length > 0 ? (
+                profiles.map((p) => (
+                  <div
+                    key={p.id}
+                    className={styles.dropdownItem}
+                    onClick={() => {
+                      newTab(undefined, undefined, p.id);
+                      setShowAddDropdown(false);
+                    }}
+                  >
+                    <Terminal size={14} color={p.color || '#6C8CFF'} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.name}
+                    </span>
+                    {p.isDefault && (
+                      <span style={{ fontSize: 10, color: '#6C8CFF', marginLeft: 6, opacity: 0.8 }}>Default</span>
+                    )}
+                  </div>
+                ))
+              ) : (
                 <div
-                  key={s.id}
                   className={styles.dropdownItem}
                   onClick={() => {
-                    newTab(s.path, s.args);
+                    newTab();
                     setShowAddDropdown(false);
                   }}
                 >
-                  <Terminal size={14} /> {s.name}
+                  <Terminal size={14} color="#6C8CFF" />
+                  <span>Default Terminal</span>
                 </div>
-              ))}
+              )}
+              <div className={styles.dropdownDivider} />
+              <div
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setShowAddDropdown(false);
+                  setActiveNavTab('profiles');
+                }}
+              >
+                <Settings size={14} />
+                <span>Manage Profiles...</span>
+              </div>
             </div>
           )}
         </div>
@@ -157,6 +220,15 @@ export const TabStrip: React.FC = () => {
               onClick={() => togglePinTab(contextMenuTabId)}
             >
               Pin / Unpin Tab
+            </div>
+            <div
+              className={styles.dropdownItem}
+              onClick={() => {
+                handlePopOut(contextMenuTabId);
+                setContextMenuTabId(null);
+              }}
+            >
+              Pop out to Window
             </div>
             <div className={styles.dropdownDivider} />
             <div className={styles.dropdownItem} onClick={() => closeTab(contextMenuTabId)}>

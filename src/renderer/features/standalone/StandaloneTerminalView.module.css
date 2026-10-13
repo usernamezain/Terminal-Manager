@@ -1,0 +1,132 @@
+.standaloneContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-surface, #0B0D10);
+  color: var(--text-primary, #E6E8EB);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.titleBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  background-color: var(--bg-surface-elevated, #14171E);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  padding: 0 8px 0 12px;
+  user-select: none;
+  -webkit-app-region: drag;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.titleLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.titleIcon {
+  display: flex;
+  align-items: center;
+  color: var(--accent-primary, #6C8CFF);
+  flex-shrink: 0;
+}
+
+.sessionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #E6E8EB);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.sessionCwd {
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-secondary, #8A99AD);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.titleRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.dockBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  background-color: var(--surface-secondary, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  color: var(--text-primary, #E6E8EB);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dockBtn:hover {
+  background-color: var(--accent-primary, #6C8CFF);
+  border-color: var(--accent-primary, #6C8CFF);
+  color: #FFFFFF;
+}
+
+.windowControls {
+  display: flex;
+  align-items: center;
+}
+
+.controlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary, #8A99AD);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.controlBtn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #E6E8EB);
+}
+
+.closeControlBtn:hover {
+  background-color: #EF4444;
+  color: #FFFFFF;
+}
+
+.terminalArea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background-color: var(--bg-surface, #0B0D10);
+  padding: 4px 6px;
+  box-sizing: border-box;
+}
+
+.terminalArea :global(.xterm) {
+  height: 100%;
+  width: 100%;
+}

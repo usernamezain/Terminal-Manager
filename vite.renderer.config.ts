@@ -13,6 +13,22 @@ export default defineConfig({
     outDir: path.resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'zustand'],
+          'vendor-xterm': [
+            '@xterm/xterm',
+            '@xterm/addon-fit',
+            '@xterm/addon-search',
+            '@xterm/addon-web-links',
+            '@xterm/addon-serialize',
+            '@xterm/addon-unicode11',
+          ],
+          'vendor-framer': ['framer-motion'],
+        },
+      },
+    },
   },
   resolve: {
     alias: {

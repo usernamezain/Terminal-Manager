@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ShellExperienceSettings, KeybindingItem } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
-import { Keyboard, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { Plus, Trash2, RotateCcw } from 'lucide-react';
 
 interface KeybindingsSectionProps {
   settings: ShellExperienceSettings;
@@ -45,71 +46,92 @@ export const KeybindingsSection: React.FC<KeybindingsSectionProps> = ({ settings
   };
 
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Keyboard size={18} color="#4ADE80" />
-          <span>PSReadLine Keybindings & Handlers</span>
-        </div>
-        <button className={styles.btnSecondary} onClick={handleReset}>
-          <RotateCcw size={14} /> Reset Defaults
-        </button>
-      </div>
-
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Shortcut Chord</th>
-            <th>Handler Function</th>
-            <th>Description</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bindings.map((item, idx) => (
-            <tr key={idx}>
-              <td style={{ fontWeight: 600, color: '#6C8CFF' }}>{item.chord}</td>
-              <td style={{ fontFamily: 'monospace' }}>{item.function}</td>
-              <td style={{ fontSize: 12, color: '#8A99AD' }}>{item.description || 'Custom handler'}</td>
-              <td>
-                <button
-                  className={styles.btnSecondary}
-                  style={{ padding: '2px 6px', color: '#F87171' }}
-                  onClick={() => handleRemove(idx)}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </td>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <SettingsSection
+        title="PSReadLine Keybindings & Handlers"
+        description="Keyboard shortcuts for command line editing and interactive completion."
+        action={
+          <button className={layoutStyles.btnSecondary} onClick={handleReset}>
+            <RotateCcw size={13} />
+            <span>Reset Defaults</span>
+          </button>
+        }
+      >
+        <table className={layoutStyles.cleanTable}>
+          <thead>
+            <tr>
+              <th style={{ width: '25%' }}>Shortcut Chord</th>
+              <th style={{ width: '30%' }}>Handler Function</th>
+              <th style={{ width: '35%' }}>Description</th>
+              <th style={{ width: '10%', textAlign: 'right' }}>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {bindings.map((item, idx) => (
+              <tr key={idx}>
+                <td style={{ fontWeight: 500, color: 'var(--accent)' }}>{item.chord}</td>
+                <td style={{ fontFamily: 'var(--font-terminal)', fontSize: 12 }}>{item.function}</td>
+                <td>{item.description || 'Custom handler'}</td>
+                <td style={{ textAlign: 'right' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(idx)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: 4,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    }}
+                    title="Delete keybinding"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </SettingsSection>
 
-      <div className={styles.sectionTitle} style={{ marginTop: 12 }}>
-        <span>Add Keybinding</span>
-      </div>
-
-      <div className={styles.gridTwo}>
-        <input
-          className={styles.input}
-          placeholder="Shortcut (e.g. Ctrl+z)"
-          value={newChord}
-          onChange={(e) => setNewChord(e.target.value)}
-        />
-        <select className={styles.select} value={newFunc} onChange={(e) => setNewFunc(e.target.value)}>
-          <option value="HistorySearchBackward">HistorySearchBackward</option>
-          <option value="HistorySearchForward">HistorySearchForward</option>
-          <option value="MenuComplete">MenuComplete</option>
-          <option value="Undo">Undo</option>
-          <option value="Redo">Redo</option>
-          <option value="BackwardDeleteWord">BackwardDeleteWord</option>
-          <option value="DeleteWord">DeleteWord</option>
-        </select>
-      </div>
-
-      <button className={styles.btnPrimary} style={{ width: 'fit-content' }} onClick={handleAdd}>
-        <Plus size={14} /> Add Binding
-      </button>
+      <SettingsSection
+        title="Add Custom Keybinding"
+        description="Bind a shortcut combination to a PSReadLine handler function."
+      >
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <input
+            className={layoutStyles.controlInput}
+            style={{ width: 180 }}
+            placeholder="Chord (e.g. Ctrl+k)"
+            value={newChord}
+            onChange={(e) => setNewChord(e.target.value)}
+          />
+          <select
+            className={layoutStyles.controlSelect}
+            style={{ flex: 1 }}
+            value={newFunc}
+            onChange={(e) => setNewFunc(e.target.value)}
+          >
+            <option value="HistorySearchBackward">HistorySearchBackward</option>
+            <option value="HistorySearchForward">HistorySearchForward</option>
+            <option value="MenuComplete">MenuComplete</option>
+            <option value="Complete">Complete</option>
+            <option value="BackwardDeleteWord">BackwardDeleteWord</option>
+            <option value="DeleteWord">DeleteWord</option>
+            <option value="BeginningOfLine">BeginningOfLine</option>
+            <option value="EndOfLine">EndOfLine</option>
+            <option value="ClearScreen">ClearScreen</option>
+            <option value="Undo">Undo</option>
+            <option value="Redo">Redo</option>
+          </select>
+          <button className={layoutStyles.btnSecondary} onClick={handleAdd}>
+            <Plus size={13} />
+            <span>Add Binding</span>
+          </button>
+        </div>
+      </SettingsSection>
     </div>
   );
 };

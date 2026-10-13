@@ -2,89 +2,110 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: 16px;
-  color: var(--text-primary, #E6E8EB);
-  background: var(--bg-primary, #0D0F13);
-  padding: 16px;
-  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  gap: var(--space-12);
+  color: var(--text-primary);
+  background: transparent;
+  padding: 0;
   font-family: inherit;
+  overflow: hidden;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-12);
+  flex-shrink: 0;
 }
 
 .titleGroup {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-12);
 }
 
 .titleGroup h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #FFFFFF;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
 }
 
 .subTitle {
-  margin: 2px 0 0 0;
-  font-size: 12px;
-  color: #8A99AD;
+  margin: var(--space-2) 0 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
 }
 
 .navTabs {
   display: flex;
-  gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 8px;
+  align-items: center;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-8);
   overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  min-height: 40px;
 }
 
 .tabBtn {
-  background: transparent;
-  border: none;
-  color: #8A99AD;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
   padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
   white-space: nowrap;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
+  flex-shrink: 0;
 }
 
 .tabBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
 .tabBtnActive {
-  background: rgba(108, 140, 255, 0.15);
-  color: #6C8CFF;
+  background: rgba(108, 140, 255, 0.16);
+  color: var(--accent);
+  border-color: rgba(108, 140, 255, 0.35);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tabContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+  padding-right: 4px;
 }
 
 .sectionCard {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-16);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-14);
 }
 
 .sectionTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: #FFFFFF;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
   margin: 0;
   display: flex;
   align-items: center;
@@ -94,49 +115,50 @@
 .gridTwo {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-12);
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-6);
 }
 
 .formGroup label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #A3B1C2;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
 }
 
 .input, .select {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  color: #FFFFFF;
+  background: var(--bg-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .input:focus, .select:focus {
-  border-color: #6C8CFF;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .btnPrimary {
-  background: #6C8CFF;
+  background: var(--accent);
   color: #FFFFFF;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: opacity 0.15s ease;
+  gap: var(--space-6);
+  transition: opacity var(--duration-fast) var(--ease-standard);
 }
 
 .btnPrimary:hover {
@@ -144,58 +166,60 @@
 }
 
 .btnSecondary {
-  background: rgba(255, 255, 255, 0.08);
-  color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 13px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-xs);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-6);
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .btnSecondary:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--text-secondary);
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
+  gap: var(--space-6);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
 .chipSuccess {
-  background: rgba(74, 222, 128, 0.15);
-  color: #4ADE80;
-  border: 1px solid rgba(74, 222, 128, 0.3);
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(74, 222, 128, 0.25);
 }
 
 .chipWarning {
-  background: rgba(250, 204, 21, 0.15);
-  color: #FACC15;
-  border: 1px solid rgba(250, 204, 21, 0.3);
+  background: rgba(250, 204, 21, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(250, 204, 21, 0.25);
 }
 
 .chipDanger {
-  background: rgba(248, 113, 113, 0.15);
-  color: #F87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.25);
 }
 
 .previewBox {
-  background: #090B0E;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 12px;
-  font-family: 'CaskaydiaCove Nerd Font Mono', 'Cascadia Code', Consolas, monospace;
-  font-size: 13px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-12);
+  font-family: var(--font-terminal);
+  font-size: var(--font-size-xs);
   white-space: pre-wrap;
   word-break: break-all;
   overflow-x: auto;
@@ -204,17 +228,17 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--font-size-xs);
 }
 
 .table th, .table td {
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
   text-align: left;
 }
 
 .table th {
-  color: #8A99AD;
+  color: var(--text-muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -222,11 +246,11 @@
 
 .footer {
   margin-top: auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-12);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
-  color: #8A99AD;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
 }

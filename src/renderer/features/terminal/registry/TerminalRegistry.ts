@@ -9,6 +9,8 @@ import { AppSettings } from '../../../../shared/types';
 import { XTERM_THEMES } from '../../../../shared/constants';
 import { rendererPool } from '../renderer-pool/RendererPool';
 import { activityStore } from './activityStore';
+import { useWorkspaceStore } from '../../layout/useWorkspaceStore';
+import { useShellIntegrationStore } from '../../terminal-actions/shellIntegrationStore';
 
 export interface TerminalEntry {
   paneId: string;
@@ -19,6 +21,7 @@ export interface TerminalEntry {
   serializeAddon: SerializeAddon;
   containerElement: HTMLDivElement;
   hostSlot: HTMLElement | null;
+  inputQueue?: string[];
   unsubData?: () => void;
   unsubExit?: () => void;
   unsubFallback?: () => void;
@@ -33,12 +36,19 @@ export class TerminalRegistry {
 
   constructor() {
     this.setupGlobalPtyListeners();
+    if (typeof document !== 'undefined' && document.fonts) {
+      document.fonts.ready.then(() => {
+        for (const entry of this.entries.values()) {
+          this.scheduleFit(entry.paneId, true);
+        }
+      });
+    }
   }
 
   private setupGlobalPtyListeners(): void {
     if (typeof window === 'undefined' || !window.api?.pty) return;
 
-    window.api.pty.onData(({ id, data }) => {
+    window.api.pty.onData(({ id, data }: any) => {
       const paneId = this.ptyToPaneMap.get(id);
       if (!paneId) return;
 
@@ -62,7 +72,7 @@ export class TerminalRegistry {
       }
     });
 
-    window.api.pty.onFallback(({ id, message }) => {
+    window.api.pty.onFallback(({ id, message }: any) => {
       const paneId = this.ptyToPaneMap.get(id);
       if (paneId) {
         console.warn(`PTY Fallback for pane [${paneId}]: ${message}`);
@@ -99,7 +109,11 @@ export class TerminalRegistry {
     onContextMenu?: (e: MouseEvent) => void
   ): TerminalEntry {
     if (this.entries.has(paneId)) {
-      return this.entries.get(paneId)!;
+      const existing = this.entries.get(paneId)!;
+      if (ptyId && existing.ptyId !== ptyId) {
+        this.updatePtyId(paneId, ptyId);
+      }
+      return existing;
     }
 
     const containerElement = document.createElement('div');
@@ -135,11 +149,56 @@ export class TerminalRegistry {
 
     terminal.open(containerElement);
 
+    const entry: TerminalEntry = {
+      paneId,
+      ptyId,
+      terminal,
+      fitAddon,
+      searchAddon,
+      serializeAddon,
+      containerElement,
+      hostSlot: null,
+      inputQueue: [],
+    };
+
     terminal.onData((data) => {
-      if (window.api?.pty && ptyId) {
-        window.api.pty.write(ptyId, data);
+      // Support broadcast input to all tabs/panes
+      const isBroadcast = useWorkspaceStore.getState().isBroadcastInput;
+      if (isBroadcast) {
+        this.getEntries().forEach((e) => {
+          if (window.api?.pty && e.ptyId && e.ptyId !== '' && !e.ptyId.startsWith('pty-fresh')) {
+            window.api.pty.write(e.ptyId, data);
+          }
+        });
+        return;
+      }
+
+      const activePtyId = entry.ptyId;
+      if (window.api?.pty && activePtyId && activePtyId !== '' && !activePtyId.startsWith('pty-fresh')) {
+        window.api.pty.write(activePtyId, data);
+      } else {
+        entry.inputQueue = entry.inputQueue || [];
+        entry.inputQueue.push(data);
       }
     });
+
+    // Shell Integration: register OSC 133 (prompt/command markers) and OSC 7 (cwd)
+    if (settings.shellIntegration ?? true) {
+      terminal.parser.registerOscHandler(133, (data: string) => {
+        const activePtyId = entry.ptyId;
+        if (!activePtyId) return true;
+        const currentY = terminal.buffer.active.cursorY + terminal.buffer.active.baseY;
+        useShellIntegrationStore.getState().handleOsc133(activePtyId, data, currentY);
+        return true;
+      });
+
+      terminal.parser.registerOscHandler(7, (data: string) => {
+        const activePtyId = entry.ptyId;
+        if (!activePtyId) return true;
+        useShellIntegrationStore.getState().handleOsc7(activePtyId, data);
+        return true;
+      });
+    }
 
     terminal.attachCustomKeyEventHandler((event: KeyboardEvent) => {
       if (event.type !== 'keydown') return true;
@@ -154,8 +213,8 @@ export class TerminalRegistry {
       }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
         navigator.clipboard.readText().then((text) => {
-          if (text && window.api?.pty && ptyId) {
-            window.api.pty.write(ptyId, text);
+          if (text && window.api?.pty && entry.ptyId) {
+            window.api.pty.write(entry.ptyId, text);
           }
         });
         return false;
@@ -167,19 +226,10 @@ export class TerminalRegistry {
       containerElement.addEventListener('contextmenu', onContextMenu);
     }
 
-    const entry: TerminalEntry = {
-      paneId,
-      ptyId,
-      terminal,
-      fitAddon,
-      searchAddon,
-      serializeAddon,
-      containerElement,
-      hostSlot: null,
-    };
-
     this.entries.set(paneId, entry);
-    this.ptyToPaneMap.set(ptyId, paneId);
+    if (ptyId) {
+      this.ptyToPaneMap.set(ptyId, paneId);
+    }
 
     return entry;
   }
@@ -195,6 +245,9 @@ export class TerminalRegistry {
 
     rendererPool.setVisible(paneId, true, entry.terminal);
     this.scheduleFit(paneId);
+    setTimeout(() => {
+      try { entry.terminal.focus(); } catch {}
+    }, 20);
   }
 
   public detach(paneId: string): void {
@@ -218,6 +271,15 @@ export class TerminalRegistry {
     entry.ptyId = newPtyId;
     this.ptyToPaneMap.set(newPtyId, paneId);
     this.scheduleFit(paneId, true);
+
+    // Flush any queued input typed before PTY was created
+    if (entry.inputQueue && entry.inputQueue.length > 0) {
+      const queued = entry.inputQueue.join('');
+      entry.inputQueue = [];
+      if (window.api?.pty && newPtyId) {
+        window.api.pty.write(newPtyId, queued);
+      }
+    }
   }
 
   public scheduleFit(paneId: string, immediate = false): void {

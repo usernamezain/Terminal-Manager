@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ShellExperienceSettings, UpstreamCommandInfo, CustomAliasItem } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
-import { Terminal, Search, Plus, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { Search, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface CommandsSectionProps {
   settings: ShellExperienceSettings;
@@ -43,9 +44,6 @@ const UPSTREAM_COMMANDS: UpstreamCommandInfo[] = [
   { name: 'flushdns', description: 'Flush system DNS client cache', category: 'System', defaultEnabled: true },
   { name: 'pubip', description: 'Get public IP address from ifconfig.me', category: 'System', defaultEnabled: true },
   { name: 'admin/su', description: 'Elevate new shell session with RunAs', category: 'System', defaultEnabled: true },
-  { name: 'winutil', description: 'Run Chris Titus Tech WinUtil script', category: 'WinUtil', defaultEnabled: true },
-  { name: 'winutildev', description: 'Run WinUtil prerelease script', category: 'WinUtil', defaultEnabled: true },
-  { name: 'windev', description: 'Compile and run local WinUtil checkout', category: 'WinUtil', defaultEnabled: true },
   { name: 'ep', description: 'Edit current user profile in editor', category: 'Profile', defaultEnabled: true },
   { name: 'Show-Help', description: 'Display profile help reference', category: 'Profile', defaultEnabled: true },
 ];
@@ -107,151 +105,195 @@ export const CommandsSection: React.FC<CommandsSectionProps> = ({ settings, onUp
   );
 
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Terminal size={18} color="#F87171" />
-          <span>Upstream Profile Commands & Custom Aliases ({UPSTREAM_COMMANDS.length})</span>
-        </div>
-      </div>
-
-      <div className={styles.formGroup} style={{ position: 'relative' }}>
-        <input
-          className={styles.input}
-          style={{ paddingLeft: 30 }}
-          placeholder="Search commands by name, description, or category..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <Search size={14} color="#8A99AD" style={{ position: 'absolute', left: 10, top: 11 }} />
-      </div>
-
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Command / Alias</th>
-            <th>Category</th>
-            <th>Description</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((cmd) => {
-            const isDisabled = disabledSet.has(cmd.name);
-            return (
-              <tr key={cmd.name} style={{ opacity: isDisabled ? 0.5 : 1 }}>
-                <td style={{ fontWeight: 600, color: '#FFFFFF' }}>{cmd.name}</td>
-                <td>
-                  <span className={styles.chip} style={{ background: 'rgba(255,255,255,0.06)' }}>
-                    {cmd.category}
-                  </span>
-                </td>
-                <td style={{ fontSize: 12, color: '#8A99AD' }}>{cmd.description}</td>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={!isDisabled}
-                    onChange={() => toggleCommand(cmd.name)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      <div className={styles.sectionTitle} style={{ marginTop: 16 }}>
-        <span>Create Custom Alias / Function</span>
-      </div>
-
-      <div className={styles.gridTwo}>
-        <div className={styles.formGroup}>
-          <label>Alias / Function Name</label>
-          <input
-            className={styles.input}
-            placeholder="e.g. ll2 or myfunc"
-            value={aliasName}
-            onChange={(e) => setAliasName(e.target.value)}
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>Type</label>
-          <select
-            className={styles.select}
-            value={isFunc ? 'function' : 'alias'}
-            onChange={(e) => setIsFunc(e.target.value === 'function')}
-          >
-            <option value="alias">Set-Alias</option>
-            <option value="function">Function Body</option>
-          </select>
-        </div>
-      </div>
-
-      {!isFunc ? (
-        <div className={styles.formGroup}>
-          <label>Target Value</label>
-          <input
-            className={styles.input}
-            placeholder="e.g. Get-ChildItem -Force"
-            value={aliasValue}
-            onChange={(e) => setAliasValue(e.target.value)}
-          />
-        </div>
-      ) : (
-        <div className={styles.formGroup}>
-          <label>Function Script Body</label>
-          <textarea
-            className={styles.input}
-            rows={4}
-            style={{ fontFamily: 'monospace' }}
-            placeholder="Get-Process | Where-Object CPU -gt 10"
-            value={aliasBody}
-            onChange={(e) => setAliasBody(e.target.value)}
-          />
-          <button className={styles.btnSecondary} style={{ width: 'fit-content' }} onClick={probeSyntax}>
-            Probe Syntax
-          </button>
-          {syntaxResult && (
-            <div className={styles.chip} style={{ background: syntaxResult.valid ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)' }}>
-              {syntaxResult.valid ? <CheckCircle size={12} color="#4ADE80" /> : <AlertCircle size={12} color="#F87171" />}
-              {syntaxResult.valid ? 'PowerShell syntax valid' : `Syntax Error: ${syntaxResult.error}`}
-            </div>
-          )}
-        </div>
-      )}
-
-      <button className={styles.btnPrimary} style={{ width: 'fit-content' }} onClick={addCustomAlias}>
-        <Plus size={14} /> Add Custom Entry
-      </button>
-
-      {settings.customAliases.length > 0 && (
-        <table className={styles.table} style={{ marginTop: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <SettingsSection
+        title="Built-in Productivity Aliases"
+        description="Toggle shell command aliases and quick utilities provided by Terminal Manager."
+        action={
+          <div style={{ position: 'relative', width: 220 }}>
+            <Search
+              size={13}
+              style={{
+                position: 'absolute',
+                left: 10,
+                top: 10,
+                color: 'var(--text-muted)',
+              }}
+            />
+            <input
+              className={layoutStyles.controlInput}
+              style={{ paddingLeft: 30, width: '100%', boxSizing: 'border-box' }}
+              placeholder="Filter aliases..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        }
+      >
+        <table className={layoutStyles.cleanTable}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Value / Body</th>
-              <th>Action</th>
+              <th style={{ width: '15%' }}>Alias</th>
+              <th style={{ width: '25%' }}>Command</th>
+              <th style={{ width: '15%' }}>Category</th>
+              <th style={{ width: '35%' }}>Description</th>
+              <th style={{ width: '10%', textAlign: 'right' }}>Enabled</th>
             </tr>
           </thead>
           <tbody>
-            {settings.customAliases.map((a, idx) => (
-              <tr key={idx}>
-                <td style={{ fontWeight: 600 }}>{a.name}</td>
-                <td>{a.isFunction ? 'Function' : 'Alias'}</td>
-                <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{a.isFunction ? a.body : a.value}</td>
-                <td>
-                  <button className={styles.btnSecondary} style={{ padding: '2px 6px', color: '#F87171' }} onClick={() => removeCustomAlias(idx)}>
-                    <Trash2 size={12} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {filtered.map((cmd) => {
+              const isEnabled = !disabledSet.has(cmd.name);
+              return (
+                <tr key={cmd.name}>
+                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{cmd.name}</td>
+                  <td style={{ fontFamily: 'var(--font-terminal)', fontSize: 12 }}>
+                    {cmd.alias || cmd.name}
+                  </td>
+                  <td>{cmd.category}</td>
+                  <td>{cmd.description}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      className={`${layoutStyles.controlToggle} ${
+                        isEnabled ? layoutStyles.controlToggleActive : ''
+                      }`}
+                      onClick={() => toggleCommand(cmd.name)}
+                    >
+                      <span className={layoutStyles.controlToggleThumb} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      )}
+      </SettingsSection>
+
+      {/* Custom User Aliases */}
+      <SettingsSection
+        title="Custom Aliases & Functions"
+        description="Add your own PowerShell alias shortcuts or custom function blocks."
+      >
+        {settings.customAliases.length > 0 && (
+          <table className={layoutStyles.cleanTable} style={{ marginBottom: 16 }}>
+            <thead>
+              <tr>
+                <th style={{ width: '20%' }}>Name</th>
+                <th style={{ width: '20%' }}>Type</th>
+                <th style={{ width: '50%' }}>Definition</th>
+                <th style={{ width: '10%', textAlign: 'right' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {settings.customAliases.map((item, idx) => (
+                <tr key={idx}>
+                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</td>
+                  <td>{item.isFunction ? 'Function' : 'Alias'}</td>
+                  <td style={{ fontFamily: 'var(--font-terminal)', fontSize: 12 }}>
+                    {item.isFunction ? item.body : item.value}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      onClick={() => removeCustomAlias(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: 4,
+                      }}
+                      title="Remove alias"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <input
+              className={layoutStyles.controlInput}
+              style={{ width: 160 }}
+              placeholder="Alias Name (e.g. gco)"
+              value={aliasName}
+              onChange={(e) => setAliasName(e.target.value)}
+            />
+            <select
+              className={layoutStyles.controlSelect}
+              style={{ width: 140 }}
+              value={isFunc ? 'function' : 'alias'}
+              onChange={(e) => setIsFunc(e.target.value === 'function')}
+            >
+              <option value="alias">Standard Alias</option>
+              <option value="function">Custom Function</option>
+            </select>
+            {!isFunc ? (
+              <input
+                className={layoutStyles.controlInput}
+                style={{ flex: 1 }}
+                placeholder="Target Command (e.g. git checkout)"
+                value={aliasValue}
+                onChange={(e) => setAliasValue(e.target.value)}
+              />
+            ) : null}
+          </div>
+
+          {isFunc && (
+            <div>
+              <textarea
+                style={{
+                  width: '100%',
+                  height: 100,
+                  padding: 12,
+                  background: 'var(--bg-base)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 6,
+                  fontFamily: 'var(--font-terminal)',
+                  fontSize: 12,
+                  color: 'var(--text-primary)',
+                  outline: 'none',
+                  resize: 'vertical',
+                  boxSizing: 'border-box',
+                }}
+                placeholder="function myFunc($arg) { Write-Host $arg }"
+                value={aliasBody}
+                onChange={(e) => setAliasBody(e.target.value)}
+              />
+              <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
+                <button className={layoutStyles.btnSecondary} onClick={probeSyntax}>
+                  Test PowerShell Syntax
+                </button>
+                {syntaxResult && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      color: syntaxResult.valid ? 'var(--success)' : 'var(--danger)',
+                    }}
+                  >
+                    {syntaxResult.valid ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
+                    <span>{syntaxResult.valid ? 'Syntax Valid' : syntaxResult.error}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <button className={layoutStyles.btnSecondary} onClick={addCustomAlias}>
+              <Plus size={13} />
+              <span>Add Custom Alias</span>
+            </button>
+          </div>
+        </div>
+      </SettingsSection>
     </div>
   );
 };

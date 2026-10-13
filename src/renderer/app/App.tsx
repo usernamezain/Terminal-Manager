@@ -1,18 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { TitleBar } from '@renderer/components/TitleBar';
 import { Sidebar } from '@renderer/components/Sidebar';
 import { TabStrip } from '@renderer/features/tabs/TabStrip';
 import { StatusBar } from '@renderer/components/StatusBar';
-import { SettingsModal } from '@renderer/components/SettingsModal';
 import { LayoutTreeRenderer } from '@renderer/features/layout/LayoutTreeRenderer';
 import { useWorkspaceStore } from '@renderer/features/layout/useWorkspaceStore';
 import { useWorkspaceStore as useUIWorkspaceStore } from '@renderer/store/useWorkspaceStore';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
+import { useProfilesStore } from '@renderer/store/useProfilesStore';
 import { terminalRegistry } from '@renderer/features/terminal/registry/TerminalRegistry';
 import { rendererPool } from '@renderer/features/terminal/renderer-pool/RendererPool';
-import { SystemToolsView } from '@renderer/features/tools/SystemToolsView';
-import { SystemToolsCustomizeView } from '@renderer/features/tools/SystemToolsCustomizeView';
+import { rendererPerfTracker } from '@renderer/perfTracker';
 import styles from './App.module.css';
+
+const SettingsView = lazy(() =>
+  import('@renderer/components/settings/SettingsView').then((m) => ({ default: m.SettingsView }))
+);
+
+const CustomizationDocsView = lazy(() =>
+  import('@renderer/features/docs/CustomizationDocsView').then((m) => ({ default: m.CustomizationDocsView }))
+);
+
+const ProfilesView = lazy(() =>
+  import('@renderer/features/profiles/ProfilesView').then((m) => ({ default: m.ProfilesView }))
+);
+
+const ScriptRunnerView = lazy(() =>
+  import('@renderer/features/scripts/ScriptRunnerView').then((m) => ({ default: m.ScriptRunnerView }))
+);
 
 export const App: React.FC = () => {
   const { loadSettings } = useSettingsStore();
@@ -28,11 +43,15 @@ export const App: React.FC = () => {
     setActiveTab,
   } = useWorkspaceStore();
 
-  const activeNavTab = useUIWorkspaceStore((state) => state.activeNavTab);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { activeNavTab, setActiveNavTab } = useUIWorkspaceStore();
+  const [settingsInitialTab, setSettingsInitialTab] = useState<string>('general');
+
+  const { loadProfiles } = useProfilesStore();
 
   useEffect(() => {
+    rendererPerfTracker.mark('reactMounted');
     loadSettings();
+    loadProfiles();
     if (window.api?.isE2E) {
       (window as any).useWorkspaceStore = useWorkspaceStore;
       (window as any).terminalRegistry = terminalRegistry;
@@ -44,15 +63,76 @@ export const App: React.FC = () => {
         },
       };
     }
-  }, [loadSettings]);
+  }, [loadSettings, loadProfiles]);
+
+  // IPC Event Listeners for Docking and Navigation
+  useEffect(() => {
+    const unsubDock = window.api?.session?.onDockTab?.((data) => {
+      useWorkspaceStore.getState().dockTab(data);
+    });
+
+    const unsubPopOut = window.api?.session?.onTabPoppedOut?.((data) => {
+      useWorkspaceStore.getState().handleTabPoppedOut(data.sessionId);
+    });
+
+    const unsubNavigate = window.api?.app?.onNavigate?.((dest) => {
+      if (dest === 'settings') {
+        setSettingsInitialTab('general');
+        setActiveNavTab('settings');
+      } else if (dest === 'docs') {
+        setActiveNavTab('docs');
+      } else if (dest === 'profiles') {
+        setActiveNavTab('profiles');
+      } else if (dest === 'scripts') {
+        setActiveNavTab('scripts');
+      }
+    });
+
+    const unsubToast = window.api?.app?.onToast?.((data) => {
+      useWorkspaceStore.getState().setToast(data.message);
+    });
+
+    return () => {
+      if (unsubDock) unsubDock();
+      if (unsubPopOut) unsubPopOut();
+      if (unsubNavigate) unsubNavigate();
+      if (unsubToast) unsubToast();
+    };
+  }, [setActiveNavTab]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // F1 for Documentation
+      if (e.key === 'F1') {
+        e.preventDefault();
+        setActiveNavTab(activeNavTab === 'docs' ? 'terminals' : 'docs');
+        return;
+      }
+
+      // Escape to close Settings, Docs, Profiles, or Scripts and return to terminals
+      if (e.key === 'Escape' && (activeNavTab === 'settings' || activeNavTab === 'docs' || activeNavTab === 'profiles' || activeNavTab === 'scripts')) {
+        e.preventDefault();
+        setActiveNavTab('terminals');
+        return;
+      }
+
+      // Ctrl+, for Settings
+      if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        setSettingsInitialTab('general');
+        setActiveNavTab(activeNavTab === 'settings' ? 'terminals' : 'settings');
+        return;
+      }
+
       // Ctrl+Shift Shortcuts
       if (e.ctrlKey && e.shiftKey) {
         const key = e.key.toLowerCase();
-        if (key === 't') {
+        if (key === 'r') {
+          // Ctrl+Shift+R for Script Runner
+          e.preventDefault();
+          setActiveNavTab(activeNavTab === 'scripts' ? 'terminals' : 'scripts');
+        } else if (key === 't') {
           e.preventDefault();
           newTab();
         } else if (key === 'w') {
@@ -60,8 +140,14 @@ export const App: React.FC = () => {
           const activeTabObj = tabs.find((t) => t.id === activeTabId);
           if (activeTabObj) closePane(activeTabObj.focusedPaneId);
         } else if (key === 'd') {
-          e.preventDefault();
-          splitPane('row');
+          // If in documentation, toggle back or open docs
+          if (activeNavTab === 'docs') {
+            e.preventDefault();
+            setActiveNavTab('terminals');
+          } else {
+            e.preventDefault();
+            splitPane('row');
+          }
         } else if (key === 'e') {
           e.preventDefault();
           splitPane('column');
@@ -104,7 +190,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tabs, activeTabId, newTab, closePane, splitPane, toggleGridMode, toggleMaximizePane, spatialFocus, setActiveTab]);
+  }, [tabs, activeTabId, activeNavTab, newTab, closePane, splitPane, toggleGridMode, toggleMaximizePane, spatialFocus, setActiveTab, setActiveNavTab]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
@@ -113,45 +199,58 @@ export const App: React.FC = () => {
       <TitleBar />
 
       <div className={styles.mainLayout}>
-        <Sidebar onOpenSettings={() => setIsSettingsOpen(true)} />
+        <Sidebar
+          onOpenSettings={(tab) => {
+            setSettingsInitialTab(tab || 'general');
+            setActiveNavTab('settings');
+          }}
+        />
 
         <div className={styles.contentArea}>
-          <TabStrip />
-
-          <div className={styles.paneContainer}>
-            {activeNavTab === 'terminals' && activeTab ? (
-              <LayoutTreeRenderer
-                key={activeTab.id}
-                node={activeTab.root}
-                focusedPaneId={activeTab.focusedPaneId}
-                maximizedPaneId={activeTab.maximizedPaneId}
+          {activeNavTab === 'settings' ? (
+            <Suspense fallback={null}>
+              <SettingsView
+                initialSection={settingsInitialTab}
+                onClose={() => setActiveNavTab('terminals')}
               />
-            ) : activeNavTab === 'profiles' ? (
-              <div className={styles.placeholderView}>
-                <h3>Profiles (Phase 3 Seam)</h3>
-                <span className={styles.placeholderBadge}>
-                  Profile presets and manager will be introduced in Phase 3.
-                </span>
+            </Suspense>
+          ) : activeNavTab === 'docs' ? (
+            <Suspense fallback={null}>
+              <CustomizationDocsView
+                onClose={() => setActiveNavTab('terminals')}
+              />
+            </Suspense>
+          ) : activeNavTab === 'scripts' ? (
+            <Suspense fallback={null}>
+              <ScriptRunnerView />
+            </Suspense>
+          ) : activeNavTab === 'profiles' ? (
+            <Suspense fallback={null}>
+              <ProfilesView />
+            </Suspense>
+          ) : (
+            <>
+              <TabStrip />
+              <div className={styles.paneContainer}>
+                {activeTab ? (
+                  <LayoutTreeRenderer
+                    key={activeTab.id}
+                    node={activeTab.root}
+                    focusedPaneId={activeTab.focusedPaneId}
+                    maximizedPaneId={activeTab.maximizedPaneId}
+                  />
+                ) : (
+                  <div className={styles.placeholderView}>
+                    <h3>No Active Tab</h3>
+                  </div>
+                )}
               </div>
-            ) : activeNavTab === 'tools' ? (
-              <SystemToolsView />
-            ) : activeNavTab === 'customize-tools' ? (
-              <SystemToolsCustomizeView />
-            ) : (
-              <div className={styles.placeholderView}>
-                <h3>View Not Found</h3>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
       <StatusBar />
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
     </div>
   );
 };

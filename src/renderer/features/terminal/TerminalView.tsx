@@ -80,13 +80,13 @@ export const TerminalView: React.FC<TerminalViewProps> = ({ pane }) => {
   useEffect(() => {
     if (!window.api?.pty) return;
 
-    const unsubExit = window.api.pty.onExit((event) => {
+    const unsubExit = window.api.pty.onExit((event: any) => {
       if (pane.ptyId && event.id === pane.ptyId) {
         setPaneStatus(pane.id, 'exited', event.exitCode);
       }
     });
 
-    const unsubFallback = window.api.pty.onFallback((fallback) => {
+    const unsubFallback = window.api.pty.onFallback((fallback: any) => {
       setToastMessage(fallback.message);
     });
 

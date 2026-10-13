@@ -29,11 +29,11 @@ interface WorkspaceState {
   activeTabId: string;
   activePaneId: string;
   sidebarExpanded: boolean;
-  activeNavTab: 'terminals' | 'profiles' | 'tools' | 'settings' | 'customize-tools';
+  activeNavTab: 'terminals' | 'profiles' | 'scripts' | 'settings' | 'docs';
 
   setSidebarExpanded: (expanded: boolean) => void;
   toggleSidebar: () => void;
-  setActiveNavTab: (nav: 'terminals' | 'profiles' | 'tools' | 'settings' | 'customize-tools') => void;
+  setActiveNavTab: (nav: 'terminals' | 'profiles' | 'scripts' | 'settings' | 'docs') => void;
 
   setPaneTitle: (paneId: string, title: string) => void;
   setPaneCwd: (paneId: string, cwd: string) => void;

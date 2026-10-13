@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, Users, Wrench, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Terminal, Layers, PlaySquare, BookOpen, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useWorkspaceStore } from '@renderer/store/useWorkspaceStore';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
-  onOpenSettings: () => void;
+  onOpenSettings: (initialTab?: 'general' | 'shellexp' | 'docs' | 'perf') => void;
 }
 
 interface NavItemDef {
-  id: 'terminals' | 'profiles' | 'tools' | 'settings';
+  id: 'terminals' | 'profiles' | 'scripts' | 'docs' | 'settings';
   label: string;
   icon: React.ElementType;
   badge?: string;
   winOnly?: boolean;
+  shortcut?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
@@ -27,8 +28,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
   const navItems: NavItemDef[] = [
     { id: 'terminals', label: 'Terminals', icon: Terminal },
-    { id: 'profiles', label: 'Profiles', icon: Users, badge: 'Phase 3' },
-    { id: 'tools', label: 'System Tools', icon: Wrench, badge: 'WinUtil', winOnly: true },
+    { id: 'profiles', label: 'Profiles', icon: Layers },
+    { id: 'scripts', label: 'Script Runner', icon: PlaySquare, shortcut: 'Ctrl+Shift+R' },
+    { id: 'docs', label: 'Documentation', icon: BookOpen },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -48,11 +50,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     setActiveTooltip(null);
   };
 
-  const handleClick = (id: 'terminals' | 'profiles' | 'tools' | 'settings') => {
-    if (id === 'settings') {
-      onOpenSettings();
-    } else {
-      setActiveNavTab(id);
+  const handleClick = (id: 'terminals' | 'profiles' | 'scripts' | 'docs' | 'settings') => {
+    setActiveNavTab(id);
+    if (id === 'settings' && onOpenSettings) {
+      onOpenSettings('general');
     }
   };
 
@@ -89,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
               {!sidebarExpanded && activeTooltip === item.id && (
                 <div className={styles.tooltip}>
-                  {item.label} {item.badge ? `(${item.badge})` : ''}
+                  {item.label} {item.shortcut ? `(${item.shortcut})` : item.badge ? `(${item.badge})` : ''}
                 </div>
               )}
             </button>
@@ -99,11 +100,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
       <div className={styles.bottomSection}>
         <button
-          className={styles.toggleButton}
+          className={styles.collapseButton}
           onClick={toggleSidebar}
-          title={sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          title={sidebarExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
         >
-          {sidebarExpanded ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+          {sidebarExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          {sidebarExpanded && <span className={styles.collapseLabel}>Collapse</span>}
         </button>
       </div>
     </motion.aside>

@@ -38,6 +38,10 @@ export class SettingsStore {
     return { ...this.settings };
   }
 
+  public getSettings(): AppSettings {
+    return this.get();
+  }
+
   public set(partialSettings: Partial<AppSettings>): AppSettings {
     this.settings = {
       ...this.settings,

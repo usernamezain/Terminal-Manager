@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useWorkspaceStore } from '@renderer/store/useWorkspaceStore';
+import { AlertTriangle } from 'lucide-react';
 import styles from './StatusBar.module.css';
 
 interface ShellMemoryInfo {
@@ -110,14 +111,16 @@ export const StatusBar: React.FC = () => {
             className={`${styles.item} ${styles.warningItem}`}
             title="30+ terminals open. Consider using Fast Start or PowerShell 7 to reduce memory footprint."
           >
-            <span className={styles.warningTag}>⚠️ High Shell Load</span>
+            <span className={styles.warningTag}>
+              <AlertTriangle size={12} className="inline mr-1" /> High Shell Load
+            </span>
           </div>
         )}
-        <div className={styles.item}>
+        <div className={`${styles.item} ${styles.mediumPriority}`}>
           <span>Encoding:</span>
           <span>UTF-8</span>
         </div>
-        <div className={styles.item}>
+        <div className={`${styles.item} ${styles.lowPriority}`}>
           <span>Platform:</span>
           <span>{window.api?.platform || 'win32'}</span>
         </div>

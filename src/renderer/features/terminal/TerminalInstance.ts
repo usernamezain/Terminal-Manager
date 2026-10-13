@@ -151,7 +151,7 @@ export class TerminalInstance {
 
     // Listen for PTY data -> xterm.write with ACK callback
     if (window.api?.pty) {
-      this.unsubData = window.api.pty.onData((event) => {
+      this.unsubData = window.api.pty.onData((event: any) => {
         if (event.id === this.ptyId && !this.isDisposed) {
           this.terminal.write(event.data, () => {
             if (this.ptyId && window.api?.pty) {

@@ -34,14 +34,21 @@ export class ShellPoolManager {
     return this.poolSize;
   }
 
+  public getStatus(): { poolSize: number; activePoolCount: number } {
+    return {
+      poolSize: this.poolSize,
+      activePoolCount: this.pool.length,
+    };
+  }
+
   public acquire(): WarmSession | null {
     if (this.pool.length === 0) return null;
     const session = this.pool.shift() || null;
-    this.scheduleRefill();
+    this.scheduleRefill(50);
     return session;
   }
 
-  public scheduleRefill(delayMs = 1000): void {
+  public scheduleRefill(delayMs = 100): void {
     if (this.poolSize === 0 || this.isRefilling) return;
     setTimeout(() => this.refill(), delayMs);
   }

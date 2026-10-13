@@ -1,0 +1,219 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modalCard {
+  background: var(--bg-surface, #14161C);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  width: 90%;
+  max-width: 520px;
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #EDEDF0);
+}
+
+.iconWarning {
+  color: var(--color-warning, #FBBF24);
+  display: flex;
+  align-items: center;
+}
+
+.iconDanger {
+  color: var(--color-error, #F87171);
+  display: flex;
+  align-items: center;
+}
+
+.iconAccent {
+  color: var(--color-accent, #6C8CFF);
+  display: flex;
+  align-items: center;
+}
+
+.modalSubtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-secondary, #9DA5B4);
+}
+
+.modalDisclaimer {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted, #6B7280);
+}
+
+.previewBox {
+  background: var(--bg-base, #0D0F13);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 160px;
+  overflow-y: auto;
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 12px;
+}
+
+.previewLine {
+  display: flex;
+  gap: 10px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.lineNumber {
+  color: var(--text-muted, #6B7280);
+  user-select: none;
+  min-width: 20px;
+  text-align: right;
+}
+
+.previewLine code {
+  color: var(--text-primary, #EDEDF0);
+  white-space: pre-wrap;
+}
+
+.previewMore {
+  padding-top: 6px;
+  color: var(--text-muted, #6B7280);
+  font-style: italic;
+  font-size: 11px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+}
+
+.checkboxRow label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #9DA5B4);
+  cursor: pointer;
+  user-select: none;
+}
+
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #9DA5B4);
+}
+
+.formGroup input {
+  background: var(--bg-base, #0D0F13);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 4px;
+  color: var(--text-primary, #EDEDF0);
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.formGroup input:focus {
+  border-color: var(--color-accent, #6C8CFF);
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btnSecondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, #EDEDF0);
+  padding: 6px 14px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s ease;
+}
+
+.btnSecondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btnPrimary {
+  background: var(--color-accent, #6C8CFF);
+  border: 1px solid transparent;
+  color: #FFFFFF;
+  padding: 6px 16px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.15s ease;
+}
+
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnDanger {
+  background: var(--color-error, #EF4444);
+  border: 1px solid transparent;
+  color: #FFFFFF;
+  padding: 6px 16px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.15s ease;
+}
+
+.btnDanger:hover {
+  opacity: 0.9;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

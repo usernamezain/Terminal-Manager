@@ -8,7 +8,7 @@ Welcome to **Terminal Manager**! This document provides complete architectural c
 
 - **Name**: Terminal Manager
 - **Primary OS**: Windows 10/11 (with macOS and Linux support)
-- **Goal**: A high-performance, desktop terminal manager supporting multiple real terminals in a single window (tabs, splits, grid), admin terminals via UAC helper, profiles, system tools integration (WinUtil), command palette, and workspace persistence.
+- **Goal**: A high-performance, desktop terminal manager supporting multiple real terminals in a single window (tabs, splits, grid), admin terminals via UAC helper, profiles, command palette, and workspace persistence.
 - **Current Phase**: **Phase 1 of 10: Foundation** (Frameless window, custom chrome, 1 working terminal pane, WebGL acceleration with Canvas fallback, backpressure flow control, atomic settings, and Zod-validated IPC).
 
 ---
@@ -177,7 +177,7 @@ npm run rebuild
 - **Phase 2**: Pane-Tree Layout Engine (Splits horizontal/vertical, resizing dividers, multi-tab). *Seam: `useWorkspaceStore` already models `Workspace > Tab[] > LayoutNode > Pane`.*
 - **Phase 3**: Profiles Presets & Manager. *Seam: `PtyCreateArgs` accepts `profileId`; Sidebar has Profiles item.*
 - **Phase 4**: Command Palette (`Ctrl+Shift+P`) & Global Hotkey Registry.
-- **Phase 5**: System Tools & WinUtil Tab (Windows-only utility tab). *Seam: Sidebar has System Tools item.*
+- **Phase 5**: Future Ideas & Historical Seams (System Tools / WinUtil feature was cleanly removed on purpose; backup tag `pre-remove-system-tools` available).
 - **Phase 6**: Out-of-Process Administrative Elevation. *Seam: `/src/helper/README.md` placeholder for `terminal-helper.exe`.*
 - **Phase 7-10**: Session Persistence, Custom Macros, and Installer Builds (`electron-builder`).
 

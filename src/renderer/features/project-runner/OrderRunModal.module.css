@@ -1,0 +1,113 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10070;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  width: 460px;
+  max-width: 90vw;
+  background: var(--bg-surface, #14161C);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-md, 6px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  color: var(--text-primary, #EDEDF0);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 13px;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.description {
+  font-size: 12px;
+  color: var(--text-muted, #94A3B8);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.itemLabel {
+  font-weight: 500;
+  color: #FFFFFF;
+  flex: 1;
+}
+
+.itemCmd {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-muted, #94A3B8);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cancelBtn {
+  height: 30px;
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: var(--text-secondary, #CBD5E1);
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.runBtn {
+  height: 30px;
+  padding: 0 16px;
+  background: var(--accent, #6C8CFF);
+  border: none;
+  border-radius: 4px;
+  color: #FFFFFF;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.runBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

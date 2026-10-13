@@ -1,6 +1,8 @@
 import React from 'react';
 import { ShellExperienceSettings } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import { SettingsRow } from '../../components/settings/SettingsRow';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
 import { Folder, FileText, FileCode, Image as ImageIcon } from 'lucide-react';
 
 interface IconsSectionProps {
@@ -21,31 +23,32 @@ export const IconsSection: React.FC<IconsSectionProps> = ({ settings, onUpdateSe
   };
 
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Folder size={18} color="#C084FC" />
-          <span>Terminal-Icons Module Settings</span>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <SettingsSection
+        title="Terminal-Icons Configuration"
+        description="Display file and directory glyphs in directory listings and output."
+      >
+        <SettingsRow
+          label="Enable Glyphs"
+          description="Load Terminal-Icons module for Get-ChildItem, dir, and ls."
+        >
+          <button
+            type="button"
+            className={`${layoutStyles.controlToggle} ${
+              icons.enabled ? layoutStyles.controlToggleActive : ''
+            }`}
+            onClick={() => handleToggleIcons(!icons.enabled)}
+          >
+            <span className={layoutStyles.controlToggleThumb} />
+          </button>
+        </SettingsRow>
 
-      <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <input
-          type="checkbox"
-          id="icons-enabled"
-          checked={icons.enabled}
-          onChange={(e) => handleToggleIcons(e.target.checked)}
-        />
-        <label htmlFor="icons-enabled" style={{ cursor: 'pointer', fontSize: 13, color: '#FFFFFF' }}>
-          Enable Terminal-Icons File & Folder Glyphs
-        </label>
-      </div>
-
-      <div className={styles.gridTwo}>
-        <div className={styles.formGroup}>
-          <label>Color Theme</label>
+        <SettingsRow
+          label="Color Theme"
+          description="Color palette applied to file extensions and folders."
+        >
           <select
-            className={styles.select}
+            className={layoutStyles.controlSelect}
             value={icons.colorTheme}
             onChange={(e) =>
               onUpdateSettings({
@@ -57,12 +60,14 @@ export const IconsSection: React.FC<IconsSectionProps> = ({ settings, onUpdateSe
             <option value="Vibrant">Vibrant</option>
             <option value="Minimal">Minimal</option>
           </select>
-        </div>
+        </SettingsRow>
 
-        <div className={styles.formGroup}>
-          <label>Icon Theme</label>
+        <SettingsRow
+          label="Icon Set"
+          description="Glyph set encoding for your terminal font."
+        >
           <select
-            className={styles.select}
+            className={layoutStyles.controlSelect}
             value={icons.iconTheme}
             onChange={(e) =>
               onUpdateSettings({
@@ -74,18 +79,44 @@ export const IconsSection: React.FC<IconsSectionProps> = ({ settings, onUpdateSe
             <option value="Devicons">Devicons</option>
             <option value="Unicode">Unicode Fallback</option>
           </select>
-        </div>
-      </div>
+        </SettingsRow>
+      </SettingsSection>
 
-      <div className={styles.formGroup}>
-        <label>Get-ChildItem Sample Output Preview</label>
-        <div className={styles.previewBox}>
-          <div><Folder size={14} color="#6C8CFF" /> 📁 src/</div>
-          <div><FileCode size={14} color="#38BDF8" />  package.json</div>
-          <div><FileText size={14} color="#4ADE80" />  README.md</div>
-          <div><ImageIcon size={14} color="#FACC15" />  logo.png</div>
+      <SettingsSection
+        title="Directory Output Preview"
+        description="Simulated Get-ChildItem listing with selected glyphs."
+      >
+        <div
+          style={{
+            padding: 16,
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 6,
+            fontFamily: 'var(--font-terminal)',
+            fontSize: 13,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Folder size={14} color="#6C8CFF" />
+            <span>src/</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileCode size={14} color="#38BDF8" />
+            <span>package.json</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={14} color="#4ADE80" />
+            <span>README.md</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ImageIcon size={14} color="#FACC15" />
+            <span>logo.png</span>
+          </div>
         </div>
-      </div>
+      </SettingsSection>
     </div>
   );
 };

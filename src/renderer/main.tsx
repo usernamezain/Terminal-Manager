@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './app/App';
+import { StandaloneTerminalView } from './features/standalone/StandaloneTerminalView';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { rendererPerfTracker } from './perfTracker';
 import './design/global.css';
 
 const rootElement = document.getElementById('root') as HTMLElement;
@@ -19,11 +21,27 @@ if (!window.api) {
     </div>
   `;
 } else {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </React.StrictMode>
-  );
+  rendererPerfTracker.mark('rendererFirstPaint');
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const isStandalone = searchParams.get('mode') === 'standalone';
+  const standaloneSessionId = searchParams.get('sessionId') || '';
+
+  if (isStandalone && standaloneSessionId) {
+    ReactDOM.createRoot(rootElement).render(
+      <React.StrictMode>
+        <ErrorBoundary>
+          <StandaloneTerminalView sessionId={standaloneSessionId} />
+        </ErrorBoundary>
+      </React.StrictMode>
+    );
+  } else {
+    ReactDOM.createRoot(rootElement).render(
+      <React.StrictMode>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </React.StrictMode>
+    );
+  }
 }

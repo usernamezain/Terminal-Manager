@@ -43,6 +43,52 @@ export const SettingsSetSchema = z.object({
   cursorBlink: z.boolean().optional(),
   scrollback: z.number().min(100).max(100000).optional(),
   defaultShell: z.string().optional(),
+  keepRunningInBackground: z.boolean().optional(),
+  startWithWindows: z.boolean().optional(),
+  startMinimizedToTray: z.boolean().optional(),
+  openFolderTerminalsIn: z.enum(['standalone', 'tab']).optional(),
+  explorerContextMenu: z.boolean().optional(),
+  rightClickAction: z.enum(['contextMenu', 'copyOrPaste', 'paste']).optional(),
+  confirmMultiLinePaste: z.boolean().optional(),
+  shellIntegration: z.boolean().optional(),
+  showSearchTheWeb: z.boolean().optional(),
+  defaultSearchEngine: z.enum(['google', 'bing', 'duckduckgo']).optional(),
+  clipboardHistorySize: z.number().min(1).max(100).optional(),
+  actionsPanelPinned: z.boolean().optional(),
+  contextMenuVisibility: z.record(z.boolean()).optional(),
+  scriptRunner: z
+    .object({
+      defaultOnFailure: z.enum(['stop', 'continue', 'retry']).optional(),
+      defaultTimeoutSeconds: z.number().min(0).optional(),
+      logRetentionCount: z.number().min(1).optional(),
+      notificationsEnabled: z.boolean().optional(),
+      preferPwsh: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+export const ProfileSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  shellPath: z.string().min(1),
+  shellArgs: z.array(z.string()).default([]),
+  cwd: z.string().optional(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+  env: z.record(z.string()).optional(),
+  isDefault: z.boolean().optional(),
+  elevate: z.boolean().optional(),
+  tabTitle: z.string().optional(),
+  fontFamily: z.string().optional(),
+  fontSize: z.number().optional(),
+});
+
+export const ProfileSetDefaultSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const ProfileDeleteSchema = z.object({
+  id: z.string().min(1),
 });
 
 export const IPC_CHANNELS = {
@@ -54,12 +100,82 @@ export const IPC_CHANNELS = {
   PTY_DATA: 'pty:data',
   PTY_EXIT: 'pty:exit',
   PTY_FALLBACK: 'pty:fallback',
+  SESSION_ATTACH: 'session:attach',
+  SESSION_DETACH: 'session:detach',
+  SESSION_LIST: 'session:list',
+  SESSION_DOCK: 'session:dock',
+  SESSION_POP_OUT: 'session:pop-out',
+  SESSION_STANDALONE_CLOSE: 'session:standalone-close',
+  SYSTEM_REGISTRY_GET_STATUS: 'system:registry-get-status',
+  SYSTEM_REGISTRY_REPAIR: 'system:registry-repair',
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SHELLS_DETECT: 'shells:detect',
+  PROFILES_GET: 'profiles:get',
+  PROFILES_SAVE: 'profiles:save',
+  PROFILES_SET_DEFAULT: 'profiles:set-default',
+  PROFILES_DELETE: 'profiles:delete',
+  PROFILES_DETECT: 'profiles:detect',
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
   WINDOW_UNMAXIMIZE: 'window:unmaximize',
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:isMaximized',
+
+  // Script Runner Channels
+  SCRIPTS_GET_ALL: 'scripts:get-all',
+  SCRIPTS_SAVE: 'scripts:save',
+  SCRIPTS_DELETE: 'scripts:delete',
+  SCRIPTS_IMPORT: 'scripts:import',
+  SCRIPTS_EXPORT: 'scripts:export',
+  SCRIPTS_GET_SEQUENCES: 'scripts:get-sequences',
+  SCRIPTS_SAVE_SEQUENCE: 'scripts:save-sequence',
+  SCRIPTS_DELETE_SEQUENCE: 'scripts:delete-sequence',
+  SCRIPTS_GET_INTERPRETERS: 'scripts:get-interpreters',
+  SCRIPTS_RUNNER_GET_STATE: 'scripts:runner-get-state',
+  SCRIPTS_RUNNER_ENQUEUE: 'scripts:runner-enqueue',
+  SCRIPTS_RUNNER_LOAD_SEQUENCE: 'scripts:runner-load-sequence',
+  SCRIPTS_RUNNER_START: 'scripts:runner-start',
+  SCRIPTS_RUNNER_PAUSE: 'scripts:runner-pause',
+  SCRIPTS_RUNNER_RESUME: 'scripts:runner-resume',
+  SCRIPTS_RUNNER_STOP: 'scripts:runner-stop',
+  SCRIPTS_RUNNER_SKIP: 'scripts:runner-skip',
+  SCRIPTS_RUNNER_RETRY_FAILED: 'scripts:runner-retry-failed',
+  SCRIPTS_RUNNER_RESUME_FROM: 'scripts:runner-resume-from',
+  SCRIPTS_RUNNER_REORDER: 'scripts:runner-reorder',
+  SCRIPTS_RUNNER_REMOVE_ITEM: 'scripts:runner-remove-item',
+  SCRIPTS_RUNNER_CLEAR: 'scripts:runner-clear',
+  SCRIPTS_RUNNER_GET_OUTPUT: 'scripts:runner-get-output',
+  SCRIPTS_GET_HISTORY: 'scripts:get-history',
+  SCRIPTS_DELETE_HISTORY: 'scripts:delete-history',
+  SCRIPTS_CLEAR_HISTORY: 'scripts:clear-history',
+  SCRIPTS_OPEN_LOG: 'scripts:open-log',
+
+  // Snippets Channels
+  SNIPPETS_GET: 'snippets:get',
+  SNIPPETS_SAVE: 'snippets:save',
+  SNIPPETS_DELETE: 'snippets:delete',
+  SNIPPETS_IMPORT: 'snippets:import',
+
+  // Session Inspection & System Channels
+  SESSION_DETAILS: 'session:details',
+  SESSION_PROCESSES: 'session:processes',
+  SESSION_KILL_PROCESS_TREE: 'session:kill-process-tree',
+  SYSTEM_OPEN_EXTERNAL: 'system:open-external',
+  SYSTEM_OPEN_PATH: 'system:open-path',
+  SYSTEM_SHOW_ITEM_IN_FOLDER: 'system:show-item-in-folder',
+  SYSTEM_OPEN_IN_EDITOR: 'system:open-in-editor',
+  SYSTEM_OPEN_FOLDER_PICKER: 'system:open-folder-picker',
+  SYSTEM_SAVE_FILE: 'system:save-file',
+
+  // Project Runner Channels
+  PROJECT_RUNNER_DETECT: 'project-runner:detect',
+  PROJECT_RUNNER_RUN: 'project-runner:run',
+  PROJECT_RUNNER_STOP: 'project-runner:stop',
+  PROJECT_RUNNER_RESTART: 'project-runner:restart',
+  PROJECT_RUNNER_STORE_GET: 'project-runner:store-get',
+  PROJECT_RUNNER_STORE_SAVE: 'project-runner:store-save',
+  PROJECT_RUNNER_VALIDATE_PACKAGE: 'project-runner:validate-package',
+  PROJECT_RUNNER_SEARCH_PACKAGES: 'project-runner:search-packages',
 } as const;
+

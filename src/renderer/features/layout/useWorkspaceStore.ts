@@ -12,6 +12,7 @@ import {
   findNode,
 } from './treeUtils';
 import { terminalRegistry } from '../terminal/registry/TerminalRegistry';
+import { useProfilesStore } from '../../store/useProfilesStore';
 
 interface UndoCloseEntry {
   tabId: string;
@@ -23,10 +24,12 @@ interface WorkspaceState extends Workspace {
   undoStack: UndoCloseEntry[];
   toastMessage: string | null;
   draggedPaneId: string | null;
+  isBroadcastInput: boolean;
+  toggleBroadcastInput: () => void;
 
   // Tab Actions
   setActiveTab: (tabId: string) => void;
-  newTab: (shellPath?: string, shellArgs?: string[]) => Promise<void>;
+  newTab: (shellPath?: string, shellArgs?: string[], profileId?: string, cwd?: string) => Promise<void>;
   closeTab: (tabId: string) => void;
   renameTab: (tabId: string, title: string) => void;
   setTabColor: (tabId: string, color?: string) => void;
@@ -35,7 +38,7 @@ interface WorkspaceState extends Workspace {
 
   // Pane Actions
   setFocusedPane: (paneId: string) => void;
-  splitPane: (direction: Direction, shellPath?: string, shellArgs?: string[]) => Promise<string>;
+  splitPane: (direction: Direction, shellPath?: string, shellArgs?: string[], profileId?: string) => Promise<string>;
   closePane: (paneId: string) => Promise<void>;
   undoClosePane: () => Promise<void>;
   movePane: (sourceId: string, targetId: string, zone: DropZone) => void;
@@ -50,6 +53,8 @@ interface WorkspaceState extends Workspace {
   ensurePtyForPane: (paneId: string, cols?: number, rows?: number, shellPath?: string, shellArgs?: string[]) => Promise<string>;
   setToast: (msg: string | null) => void;
   setDraggedPaneId: (paneId: string | null) => void;
+  dockTab: (data: { sessionId: string; profileId?: string; title: string; cwd?: string }) => void;
+  handleTabPoppedOut: (sessionId: string) => void;
 }
 
 const initialPaneId = 'pane-1';
@@ -60,6 +65,8 @@ const initialRoot: PaneNode = {
   sessionId: '',
   title: 'PowerShell',
 };
+
+const pendingPtyCreations = new Map<string, Promise<string>>();
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   tabs: [
@@ -75,12 +82,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   undoStack: [],
   toastMessage: null,
   draggedPaneId: null,
+  isBroadcastInput: false,
+  toggleBroadcastInput: () => set((state) => ({ isBroadcastInput: !state.isBroadcastInput })),
 
   setActiveTab: (tabId) => {
     set({ activeTabId: tabId });
   },
 
-  newTab: async (shellPath, shellArgs) => {
+  newTab: async (shellPath, shellArgs, profileId, cwd) => {
     const { tabs, toastMessage } = get();
     const count = tabs.reduce((sum, t) => sum + getAllPanes(t.root).length, 0);
 
@@ -92,25 +101,42 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const paneId = `pane-${Date.now()}`;
     let ptyId = `pty-${Date.now()}`;
 
+    const profiles = useProfilesStore.getState().profiles;
+    const profile = profileId
+      ? profiles.find((p) => p.id === profileId)
+      : (!shellPath ? profiles.find((p) => p.isDefault) : undefined);
+
+    const targetShellPath = shellPath || profile?.shellPath;
+    const targetShellArgs = shellArgs || profile?.shellArgs;
+
     try {
       if (window.api?.pty) {
-        const res = await window.api.pty.create({ cols: 80, rows: 24, shellPath, shellArgs });
+        const res = await window.api.pty.create({
+          cols: 80,
+          rows: 24,
+          shellPath: targetShellPath,
+          shellArgs: targetShellArgs,
+          profileId: profile?.id || profileId,
+          cwd,
+        });
         if (res.id) ptyId = res.id;
       }
     } catch (e) {
       console.error('Failed to create PTY for new tab:', e);
     }
 
+    const title = profile?.name || (targetShellPath ? targetShellPath.split('\\').pop() || 'Terminal' : 'PowerShell');
     const newPane: PaneNode = {
       id: paneId,
       type: 'pane',
       sessionId: ptyId,
-      title: shellPath ? shellPath.split('\\').pop() || 'Terminal' : 'PowerShell',
+      title,
     };
 
     const newTabObj: Tab = {
       id: tabId,
-      title: `Terminal ${tabs.length + 1}`,
+      title: profile?.tabTitle || title || `Terminal ${tabs.length + 1}`,
+      color: profile?.color,
       mode: 'split',
       root: newPane,
       focusedPaneId: paneId,
@@ -120,6 +146,74 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       tabs: [...tabs, newTabObj],
       activeTabId: tabId,
     });
+  },
+
+  dockTab: (data) => {
+    const { tabs } = get();
+    const tabId = `tab-${Date.now()}`;
+    const paneId = `pane-${Date.now()}`;
+
+    const newPane: PaneNode = {
+      id: paneId,
+      type: 'pane',
+      sessionId: data.sessionId,
+      title: data.title || 'Terminal',
+    };
+
+    const newTabObj: Tab = {
+      id: tabId,
+      title: data.title || `Terminal ${tabs.length + 1}`,
+      mode: 'split',
+      root: newPane,
+      focusedPaneId: paneId,
+    };
+
+    set({
+      tabs: [...tabs, newTabObj],
+      activeTabId: tabId,
+    });
+  },
+
+  handleTabPoppedOut: (sessionId) => {
+    const { tabs, activeTabId } = get();
+    // Find tab containing this sessionId
+    const targetTab = tabs.find((t) => {
+      const panes = getAllPanes(t.root);
+      return panes.some((p) => p.sessionId === sessionId);
+    });
+
+    if (targetTab) {
+      // Unregister from terminal DOM registry without killing pty process
+      const panes = getAllPanes(targetTab.root);
+      for (const p of panes) {
+        terminalRegistry.unregister(p.id);
+      }
+
+      const remaining = tabs.filter((t) => t.id !== targetTab.id);
+      if (remaining.length === 0) {
+        const newTId = `tab-${Date.now()}`;
+        const newPId = `pane-${Date.now()}`;
+        const freshTab: Tab = {
+          id: newTId,
+          title: 'Terminal 1',
+          mode: 'split',
+          root: {
+            id: newPId,
+            type: 'pane',
+            sessionId: '',
+            title: 'PowerShell',
+          },
+          focusedPaneId: newPId,
+        };
+        set({ tabs: [freshTab], activeTabId: newTId });
+      } else {
+        let nextActive = activeTabId;
+        if (activeTabId === targetTab.id) {
+          nextActive = remaining[0]?.id || '';
+        }
+        set({ tabs: remaining, activeTabId: nextActive });
+      }
+    }
   },
 
   closeTab: (tabId) => {
@@ -163,7 +257,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ tabs: remaining, activeTabId: nextActiveId });
   },
 
-  splitPane: async (direction, shellPath, shellArgs) => {
+  splitPane: async (direction, shellPath, shellArgs, profileId) => {
     const { tabs, activeTabId } = get();
     const activeTab = tabs.find((t) => t.id === activeTabId);
     if (!activeTab) return '';
@@ -172,20 +266,35 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const newPaneId = `pane-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     let ptyId = `pty-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
+    const profiles = useProfilesStore.getState().profiles;
+    const profile = profileId
+      ? profiles.find((p) => p.id === profileId)
+      : (!shellPath ? profiles.find((p) => p.isDefault) : undefined);
+
+    const targetShellPath = shellPath || profile?.shellPath;
+    const targetShellArgs = shellArgs || profile?.shellArgs;
+
     try {
       if (window.api?.pty) {
-        const res = await window.api.pty.create({ cols: 80, rows: 24, shellPath, shellArgs });
+        const res = await window.api.pty.create({
+          cols: 80,
+          rows: 24,
+          shellPath: targetShellPath,
+          shellArgs: targetShellArgs,
+          profileId: profile?.id || profileId,
+        });
         if (res.id) ptyId = res.id;
       }
     } catch (e) {
       console.error('Failed to create PTY for split:', e);
     }
 
+    const title = profile?.name || (targetShellPath ? targetShellPath.split('\\').pop() || 'Terminal' : 'PowerShell');
     const newPane: PaneNode = {
       id: newPaneId,
       type: 'pane',
       sessionId: ptyId,
-      title: 'PowerShell',
+      title,
     };
 
     const newRoot = treeSplitPane(activeTab.root, focusedId, direction, newPane);
@@ -452,36 +561,46 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       return currentPane.sessionId;
     }
 
-    let ptyId = `pty-${Date.now()}`;
-    try {
-      if (window.api?.pty) {
-        const res = await window.api.pty.create({ cols, rows, shellPath, shellArgs });
-        if (res.id) ptyId = res.id;
-      }
-    } catch (e) {
-      console.error(`Failed to create PTY for pane [${paneId}]:`, e);
+    if (pendingPtyCreations.has(paneId)) {
+      return pendingPtyCreations.get(paneId)!;
     }
 
-    const updateTree = (node: any): any => {
-      if (node.id === paneId && node.type === 'pane') {
-        return { ...node, sessionId: ptyId };
+    const creationPromise = (async () => {
+      let ptyId = `pty-${Date.now()}`;
+      try {
+        if (window.api?.pty) {
+          const res = await window.api.pty.create({ cols, rows, shellPath, shellArgs });
+          if (res.id) ptyId = res.id;
+        }
+      } catch (e) {
+        console.error(`Failed to create PTY for pane [${paneId}]:`, e);
       }
-      if (node.type === 'split') {
-        return {
-          ...node,
-          children: [updateTree(node.children[0]), updateTree(node.children[1])],
-        };
-      }
-      return node;
-    };
 
-    set((state) => ({
-      tabs: state.tabs.map((t) =>
-        t.id === currentTabId ? { ...t, root: updateTree(t.root) } : t
-      ),
-    }));
+      const updateTree = (node: any): any => {
+        if (node.id === paneId && node.type === 'pane') {
+          return { ...node, sessionId: ptyId };
+        }
+        if (node.type === 'split') {
+          return {
+            ...node,
+            children: [updateTree(node.children[0]), updateTree(node.children[1])],
+          };
+        }
+        return node;
+      };
 
-    return ptyId;
+      set((state) => ({
+        tabs: state.tabs.map((t) =>
+          t.id === currentTabId ? { ...t, root: updateTree(t.root) } : t
+        ),
+      }));
+
+      pendingPtyCreations.delete(paneId);
+      return ptyId;
+    })();
+
+    pendingPtyCreations.set(paneId, creationPromise);
+    return creationPromise;
   },
 
   setToast: (msg) => set({ toastMessage: msg }),

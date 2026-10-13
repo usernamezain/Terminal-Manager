@@ -1,0 +1,845 @@
+/* Profiles View - Design System Token Compliant */
+.container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  color: var(--text-primary);
+  background-color: var(--bg-terminal);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   1. Profile List Column (Fixed 280px)
+   ========================================================================== */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.sidebarHeader {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 var(--space-16);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.sidebarTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sidebarTitle {
+  font-size: var(--font-size-section);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.countText {
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-secondary);
+}
+
+.sidebarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-shrink: 0;
+}
+
+.searchContainer {
+  position: relative;
+  margin: var(--space-8) var(--space-12);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: var(--control-height);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-12) 0 32px;
+  font-size: var(--font-size-body);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+}
+
+.profileList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-sizing: border-box;
+}
+
+.profileItem {
+  height: 48px;
+  min-height: 48px;
+  padding: var(--space-8) var(--space-12);
+  margin: 0 var(--space-8);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  background-color: transparent;
+  border: 1px solid transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  box-sizing: border-box;
+  transition: background-color var(--duration-fast) ease;
+  user-select: none;
+}
+
+.profileItem:hover {
+  background-color: var(--bg-surface);
+}
+
+.profileItemActive {
+  background-color: var(--bg-elevated);
+  border-color: var(--border-subtle);
+}
+
+.profileItemActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--space-8);
+  bottom: var(--space-8);
+  width: 2px;
+  background-color: var(--accent);
+  border-radius: 1px;
+}
+
+.profileItemLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  flex: 1;
+}
+
+.profileColorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.profileItemMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profileItemName {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 18px;
+}
+
+.profileItemSub {
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 16px;
+}
+
+.defaultPill {
+  font-size: var(--font-size-secondary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(108, 140, 255, 0.15);
+  color: var(--accent);
+  font-weight: var(--font-weight-medium);
+  line-height: 16px;
+  flex-shrink: 0;
+}
+
+.itemQuickLaunch {
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  background-color: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  flex-shrink: 0;
+}
+
+.profileItem:hover .itemQuickLaunch {
+  opacity: 1;
+}
+
+.itemQuickLaunch:hover {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   2. Detail Column (Sticky Header + Scrollable Form Body)
+   ========================================================================== */
+.detailArea {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.detailHeader {
+  height: 64px;
+  min-height: 64px;
+  padding: 0 var(--space-24);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background-color: var(--bg-terminal);
+  z-index: 10;
+}
+
+.detailTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  min-width: 0;
+  flex: 1;
+}
+
+.detailIconBox {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.detailTitleTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.detailTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailSubtitle {
+  font-size: var(--font-size-secondary);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.detailToolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+.saveNotice {
+  font-size: var(--font-size-secondary);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-right: var(--space-4);
+  white-space: nowrap;
+}
+
+/* Form Body (Scrollable Container) */
+.detailBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-24);
+  box-sizing: border-box;
+}
+
+.formContentWrapper {
+  max-width: 880px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   3. Form Sections & Dividers
+   ========================================================================== */
+.section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--space-32);
+  box-sizing: border-box;
+}
+
+.sectionDivider {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-24);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-16);
+  min-width: 0;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-section);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.sectionDesc {
+  font-size: var(--font-size-secondary);
+  color: var(--text-secondary);
+  margin: 2px 0 0 0;
+}
+
+/* ==========================================================================
+   4. Field Layout (Label -> 8px -> Control -> 4px -> Hint)
+   ========================================================================== */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-16);
+  margin-bottom: var(--space-16);
+}
+
+@media (max-width: 720px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.formGroupFull {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
+  min-width: 0;
+}
+
+.formGroupFull:last-child,
+.formGrid:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 18px;
+}
+
+.fieldHint {
+  font-size: var(--font-size-secondary);
+  color: var(--text-secondary);
+  margin-top: var(--space-4);
+  line-height: 16px;
+}
+
+.input {
+  width: 100%;
+  height: var(--control-height);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-12);
+  font-size: var(--font-size-body);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.inputMono {
+  font-family: var(--font-terminal);
+  font-size: var(--font-size-secondary);
+}
+
+/* ==========================================================================
+   5. Buttons (Unified 32px height, 6px radius, 0 12px padding)
+   ========================================================================== */
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-12);
+  height: var(--control-height);
+  background-color: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: opacity var(--duration-fast) ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-12);
+  height: var(--control-height);
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnIconOnly {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.btnIconOnly:hover:not(:disabled) {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.btnIconOnly:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  padding: 0 var(--space-12);
+  height: var(--control-height);
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.btnDanger:hover:not(:disabled) {
+  border-color: var(--danger);
+  background-color: rgba(248, 113, 113, 0.08);
+}
+
+.btnDanger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   6. Specific Components
+   ========================================================================== */
+
+/* Run as Administrator */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  padding: var(--space-12) var(--space-16);
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+}
+
+.toggleLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toggleTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.toggleSub {
+  font-size: var(--font-size-secondary);
+  color: var(--text-secondary);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--border-strong);
+  transition: 0.2s ease;
+  border-radius: var(--radius-full);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #ffffff;
+  transition: 0.2s ease;
+  border-radius: var(--radius-full);
+}
+
+.switch input:checked + .slider {
+  background-color: var(--accent);
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+/* Accent Color Picker */
+.colorPickerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: transform var(--duration-fast) ease, outline var(--duration-fast) ease;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.08);
+}
+
+.colorSwatchActive {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.hexInput {
+  width: 96px;
+  height: var(--control-height);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-12);
+  font-size: var(--font-size-secondary);
+  font-family: var(--font-terminal);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.hexInput:focus {
+  border-color: var(--accent);
+}
+
+/* Profile Icon Selector */
+.iconSelectorRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+
+.iconChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  height: var(--control-height);
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-control);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  box-sizing: border-box;
+}
+
+.iconChip:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.iconChipActive {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+/* Environment Variables Table */
+.envHeaderGroup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  margin-bottom: var(--space-16);
+  min-width: 0;
+}
+
+.envHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.envTable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+}
+
+.envRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+}
+
+.envRow .input {
+  flex: 1;
+}
+
+.envEmptyState {
+  padding: var(--space-24);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-control);
+  text-align: center;
+  font-size: var(--font-size-secondary);
+  color: var(--text-secondary);
+  background-color: transparent;
+  box-sizing: border-box;
+}
+
+.btnDeleteRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  border-radius: var(--radius-control);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.btnDeleteRow:hover {
+  background-color: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* ==========================================================================
+   7. Empty State
+   ========================================================================== */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-16);
+  color: var(--text-secondary);
+  padding: var(--space-32);
+}
+
+.emptyStateIcon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
+}
+
+.emptyStateText {
+  font-size: var(--font-size-section);
+  color: var(--text-secondary);
+  margin: 0;
+}

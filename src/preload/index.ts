@@ -48,6 +48,13 @@ const api: WindowApi = {
   shells: {
     detect: () => ipcRenderer.invoke(IPC_CHANNELS.SHELLS_DETECT),
   },
+  profiles: {
+    getAll: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILES_GET),
+    save: (profile) => ipcRenderer.invoke(IPC_CHANNELS.PROFILES_SAVE, profile),
+    setDefault: (id) => ipcRenderer.invoke(IPC_CHANNELS.PROFILES_SET_DEFAULT, { id }),
+    delete: (id) => ipcRenderer.invoke(IPC_CHANNELS.PROFILES_DELETE, { id }),
+    detect: () => ipcRenderer.invoke(IPC_CHANNELS.PROFILES_DETECT),
+  },
   shellexp: {
     getSettings: () => ipcRenderer.invoke('shellexp:get-settings'),
     setSettings: (settings: any) => ipcRenderer.invoke('shellexp:set-settings', settings),
@@ -70,23 +77,6 @@ const api: WindowApi = {
       };
     },
   },
-  tools: {
-    getStatus: () => ipcRenderer.invoke('tools:status'),
-    build: () => ipcRenderer.invoke('tools:build'),
-    update: () => ipcRenderer.invoke('tools:update'),
-    pin: (ref: string | null) => ipcRenderer.invoke('tools:pin', { ref }),
-    customize: (config: any) => ipcRenderer.invoke('tools:customize', { config }),
-    rebuild: () => ipcRenderer.invoke('tools:rebuild'),
-    launch: (args: any) => ipcRenderer.invoke('tools:launch', args),
-    dryRun: (args: any) => ipcRenderer.invoke('tools:dryRun', args),
-    onBuildProgress: (callback: (progress: any) => void) => {
-      const listener = (_event: unknown, payload: any) => callback(payload);
-      ipcRenderer.on('tools:build-progress', listener);
-      return () => {
-        ipcRenderer.removeListener('tools:build-progress', listener);
-      };
-    },
-  },
   admin: {
     getStatus: () => ipcRenderer.invoke('admin:status'),
     connect: () => ipcRenderer.invoke('admin:connect'),
@@ -98,9 +88,134 @@ const api: WindowApi = {
     close: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE),
     isMaximized: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_IS_MAXIMIZED),
   },
+  session: {
+    attach: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_ATTACH, { sessionId }),
+    detach: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_DETACH, { sessionId }),
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.SESSION_LIST),
+    dock: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_DOCK, { sessionId }),
+    popOut: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_POP_OUT, { sessionId }),
+    closeStandalone: (sessionId: string, action: 'dock' | 'background' | 'terminate') =>
+      ipcRenderer.invoke(IPC_CHANNELS.SESSION_STANDALONE_CLOSE, { sessionId, action }),
+    getDetails: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_DETAILS, { sessionId }),
+    getProcesses: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_PROCESSES, { sessionId }),
+    killProcessTree: (pid: number) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_KILL_PROCESS_TREE, { pid }),
+    onDockTab: (callback: (data: { sessionId: string; profileId?: string; title: string; cwd?: string }) => void) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on('session:dock-tab', listener);
+      return () => {
+        ipcRenderer.removeListener('session:dock-tab', listener);
+      };
+    },
+    onTabPoppedOut: (callback: (data: { sessionId: string }) => void) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on('session:tab-popped-out', listener);
+      return () => {
+        ipcRenderer.removeListener('session:tab-popped-out', listener);
+      };
+    },
+  },
+  system: {
+    getRegistryStatus: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_REGISTRY_GET_STATUS),
+    repairRegistry: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_REGISTRY_REPAIR),
+    openExternal: (url: string) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_EXTERNAL, { url }),
+    openPath: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_PATH, { path }),
+    showItemInFolder: (path: string) => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_ITEM_IN_FOLDER, { path }),
+    openInEditor: (filePath: string, line?: number, col?: number) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_IN_EDITOR, { filePath, line, col }),
+    openFolderPicker: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FOLDER_PICKER),
+    saveFile: (defaultPath: string, content: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SAVE_FILE, { defaultPath, content }),
+  },
+  snippets: {
+    getAll: () => ipcRenderer.invoke(IPC_CHANNELS.SNIPPETS_GET),
+    save: (snippet: any) => ipcRenderer.invoke(IPC_CHANNELS.SNIPPETS_SAVE, snippet),
+    delete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.SNIPPETS_DELETE, { id }),
+    import: (snippets: any[]) => ipcRenderer.invoke(IPC_CHANNELS.SNIPPETS_IMPORT, { snippets }),
+  },
   app: {
     getShellMemory: () => ipcRenderer.invoke('app:shell-memory'),
+    onNavigate: (callback: (destination: string) => void) => {
+      const listener = (_event: unknown, payload: string) => callback(payload);
+      ipcRenderer.on('app:navigate', listener);
+      return () => {
+        ipcRenderer.removeListener('app:navigate', listener);
+      };
+    },
+    onToast: (callback: (data: { type: string; message: string }) => void) => {
+      const listener = (_event: unknown, payload: { type: string; message: string }) => callback(payload);
+      ipcRenderer.on('toast:show', listener);
+      return () => {
+        ipcRenderer.removeListener('toast:show', listener);
+      };
+    },
+  },
+  perf: {
+    getMainTimestamps: () => ipcRenderer.invoke('perf:get-main-timestamps'),
+    logSummary: (summary: any) => ipcRenderer.invoke('perf:log-summary', summary),
+  },
+  scripts: {
+    getAll: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_GET_ALL),
+    save: (script) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_SAVE, script),
+    delete: (id) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_DELETE, { id }),
+    import: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_IMPORT),
+    export: (scriptIds) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_EXPORT, { scriptIds }),
+    getSequences: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_GET_SEQUENCES),
+    saveSequence: (seq) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_SAVE_SEQUENCE, seq),
+    deleteSequence: (id) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_DELETE_SEQUENCE, { id }),
+    getInterpreters: (forceRefresh) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_GET_INTERPRETERS, { forceRefresh }),
+    getRunnerState: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_GET_STATE),
+    enqueue: (items, startImmediately) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_ENQUEUE, { items, startImmediately }),
+    loadSequence: (sequenceId, runImmediately) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_LOAD_SEQUENCE, { sequenceId, runImmediately }),
+    start: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_START),
+    pause: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_PAUSE),
+    resume: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_RESUME),
+    stop: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_STOP),
+    skip: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_SKIP),
+    retryFailed: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_RETRY_FAILED),
+    resumeFromHere: (queueId) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_RESUME_FROM, { queueId }),
+    reorder: (orderedQueueIds) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_REORDER, { orderedQueueIds }),
+    removeItem: (queueId) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_REMOVE_ITEM, { queueId }),
+    clear: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_CLEAR),
+    getOutput: (queueId) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_RUNNER_GET_OUTPUT, { queueId }),
+    getHistory: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_GET_HISTORY),
+    deleteHistory: (id) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_DELETE_HISTORY, { id }),
+    clearHistory: () => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_CLEAR_HISTORY),
+    openLog: (logPath) => ipcRenderer.invoke(IPC_CHANNELS.SCRIPTS_OPEN_LOG, { logPath }),
+    onRunnerState: (callback) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on('scripts:runner-state', listener);
+      return () => {
+        ipcRenderer.removeListener('scripts:runner-state', listener);
+      };
+    },
+    onOutput: (callback) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on('scripts:output', listener);
+      return () => {
+        ipcRenderer.removeListener('scripts:output', listener);
+      };
+    },
+  },
+  projectRunner: {
+    detect: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_DETECT, args),
+    run: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_RUN, args),
+    stop: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_STOP, args),
+    restart: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_RESTART, args),
+    getStore: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_STORE_GET, args),
+    saveStore: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_STORE_SAVE, args),
+    validatePackage: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_VALIDATE_PACKAGE, args),
+    searchPackages: (args) => ipcRenderer.invoke(IPC_CHANNELS.PROJECT_RUNNER_SEARCH_PACKAGES, args),
+    onChanged: (callback) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on('project-runner:changed', listener);
+      return () => {
+        ipcRenderer.removeListener('project-runner:changed', listener);
+      };
+    },
   },
 };
 
 contextBridge.exposeInMainWorld('api', api);
+

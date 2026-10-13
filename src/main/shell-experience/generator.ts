@@ -79,9 +79,9 @@ export class CttGenerator {
     const themeFilePath = path.join(themesDir, themeFileName);
     const bundledThemePath = path.join(themesDir, 'cobalt2.omp.json');
 
-    // Ensure default cobalt2 is always available on disk
+    // Ensure default themes are available on disk
     try {
-      themeManager.ensureCobalt2Theme();
+      themeManager.ensureDefaultThemes();
     } catch {}
 
     let themeHash = 'default';
@@ -133,6 +133,7 @@ export class CttGenerator {
     const escapedThemeFilePath = this.escapePsString(themeFilePath);
     const escapedBundledThemePath = this.escapePsString(bundledThemePath);
     const escapedCacheFilePath = this.escapePsString(cacheFilePath);
+    const escapedThemeName = this.escapePsString(settings.activeTheme);
 
     return `${this.startMarker}
 # settings: ${jsonHeader}
@@ -173,60 +174,109 @@ function Get-Theme_Override {
   $ompCacheFile = '${escapedCacheFilePath}'
   $targetThemeFile = '${escapedThemeFilePath}'
   $bundledThemeFile = '${escapedBundledThemePath}'
+  $themeName = '${escapedThemeName}'
 
   $effectiveTheme = $targetThemeFile
   if (-not (Test-Path -Path $targetThemeFile -PathType Leaf)) {
     if (Test-Path -Path $bundledThemeFile -PathType Leaf) {
-      Write-Warning 'Specified oh-my-posh theme config missing or invalid. Falling back to bundled cobalt2 theme.'
       $effectiveTheme = $bundledThemeFile
+    } else {
+      $effectiveTheme = $themeName
     }
   }
 
   $fastStart = $${settings.advanced.fastStart}
+  $initialized = $false
+
   if ($fastStart -and (Test-Path -Path $ompCacheFile -PathType Leaf)) {
     try {
       $item = Get-Item $ompCacheFile
       if ($item.Length -ge 500) {
         $cacheText = Get-Content -Path $ompCacheFile -Raw -ErrorAction SilentlyContinue
-        if ($cacheText -and ($cacheText -match 'oh-my-posh' -or $cacheText -match '_omp_executable' -or $cacheText -match '\$env:POSH_THEME' -or $cacheText -match 'function global:prompt')) {
+        if ($cacheText -and ($cacheText -match 'oh-my-posh' -or $cacheText -match '_omp_executable' -or $cacheText -match '\\$env:POSH_THEME' -or $cacheText -match 'function global:prompt')) {
           . $ompCacheFile
-          return
+          $initialized = $true
         }
       }
     } catch {}
   }
 
-  if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
+  if (-not $initialized -and (Get-Command oh-my-posh -ErrorAction SilentlyContinue)) {
     try {
       $script = & oh-my-posh init pwsh --config "$effectiveTheme" 2>$null
-      if ($LASTEXITCODE -eq 0 -and $script -and $script.Length -ge 500 -and ($script -match 'oh-my-posh' -or $script -match '_omp_executable' -or $script -match '\$env:POSH_THEME' -or $script -match 'function global:prompt')) {
+      if ($LASTEXITCODE -eq 0 -and $script -and $script.Length -ge 500 -and ($script -match 'oh-my-posh' -or $script -match '_omp_executable' -or $script -match '\\$env:POSH_THEME' -or $script -match 'function global:prompt')) {
         if ($fastStart) {
           try { Set-Content -Path $ompCacheFile -Value $script -Encoding UTF8 -ErrorAction SilentlyContinue } catch {}
         }
         Invoke-Expression $script
-        return
+        $initialized = $true
       }
     } catch {}
 
-    # Fall back to default oh-my-posh init if custom config initialization failed
-    oh-my-posh init pwsh | Invoke-Expression
-  } else {
+    if (-not $initialized) {
+      # Fall back to default oh-my-posh init if custom config initialization failed
+      try {
+        oh-my-posh init pwsh | Invoke-Expression
+        $initialized = $true
+      } catch {}
+    }
+  } elseif (-not $initialized) {
     Write-Warning 'oh-my-posh is not installed. Open Settings > Shell Experience.'
   }
 
-  if ($fastStart) {
-    Register-EngineEvent -SourceIdentifier PowerShell.OnIdle -MaxTriggerCount 1 -Action {
+  # Shell Integration (OSC 133 & OSC 7) Prompt Wrapper
+  try {
+    if (Test-Path function:global:prompt) {
+      if (-not (Test-Path function:global:__tt_base_prompt)) {
+        Copy-Item function:global:prompt function:global:__tt_base_prompt -Force
+      }
+      function global:prompt {
+        try {
+          $esc = [char]27
+          $st = "$([char]27)$([char]92)"
+          $loc = $executionContext.SessionState.Path.CurrentLocation.ProviderPath
+          $locUri = if ($loc) { $loc.Replace('\', '/') } else { '' }
+          $osc7 = if ($locUri) { "$esc]7;file://localhost/$locUri$st" } else { '' }
+          $inner = if (Test-Path function:global:__tt_base_prompt) {
+            try { & global:__tt_base_prompt } catch { "PS $($executionContext.SessionState.Path.CurrentLocation)> " }
+          } else {
+            "PS $($executionContext.SessionState.Path.CurrentLocation)> "
+          }
+          return "$esc]133;D$st$osc7$esc]133;A$st$inner$esc]133;B$st"
+        } catch {
+          if (Test-Path function:global:__tt_base_prompt) {
+            try { return & global:__tt_base_prompt } catch {}
+          }
+          return "PS $($executionContext.SessionState.Path.CurrentLocation)> "
+        }
+      }
+    }
+  } catch {}
+
+  # Terminal-Icons Glyph Support
+  if ($${settings.icons.enabled}) {
+    try {
       if (Get-Module -ListAvailable -Name Terminal-Icons) {
         Import-Module Terminal-Icons -ErrorAction SilentlyContinue
+        if (Get-Command Set-TerminalIconsTheme -ErrorAction SilentlyContinue) {
+          ${settings.icons.colorTheme && settings.icons.colorTheme !== 'Default' ? `Set-TerminalIconsTheme -ColorTheme '${this.escapePsString(settings.icons.colorTheme)}' -ErrorAction SilentlyContinue` : ''}
+          ${settings.icons.iconTheme && settings.icons.iconTheme !== 'Default' ? `Set-TerminalIconsTheme -IconTheme '${this.escapePsString(settings.icons.iconTheme)}' -ErrorAction SilentlyContinue` : ''}
+        }
       }
-    } | Out-Null
+    } catch {}
   }
 }
 
 function Set-PredictionSource_Override {
-  if ($PSVersionTable.PSEdition -eq 'Core') {
-    Set-PSReadLineOption -PredictionSource '${settings.prediction.predictionSource}' -PredictionViewStyle '${settings.prediction.viewStyle}'
-  }
+  try {
+    if (Get-Module -ListAvailable -Name PSReadLine) {
+      Import-Module PSReadLine -ErrorAction SilentlyContinue
+    }
+    $cmd = Get-Command Set-PSReadLineOption -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Parameters.ContainsKey('PredictionSource')) {
+      Set-PSReadLineOption -PredictionSource '${settings.prediction.predictionSource}' -PredictionViewStyle '${settings.prediction.viewStyle}' -ErrorAction SilentlyContinue
+    }
+  } catch {}
   Set-PSReadLineOption -MaximumHistoryCount ${settings.prediction.maximumHistoryCount}
   Set-PSReadLineOption -BellStyle '${settings.prediction.bellStyle}'
   Set-PSReadLineOption -EditMode '${settings.prediction.editMode}'

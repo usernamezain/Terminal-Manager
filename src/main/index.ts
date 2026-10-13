@@ -1,13 +1,28 @@
-import { app, BrowserWindow, shell, session } from 'electron';
+import { app, BrowserWindow, shell, session, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { logger } from './logger';
 import { settingsStore } from './settingsStore';
+import { profilesStore } from './profilesStore';
 import { setupIpcHandlers } from './ipcHandlers';
-import { ptyManager } from './ptyManager';
+import { sessionManager } from './sessionManager';
 import { registerShellExpHandlers } from './shell-experience/shellExpHandlers';
+import { shellPool } from './shellPool';
+import { mainPerfTracker } from './perfTracker';
+import { parseCliArgs, ParsedCliArgs } from './cliHandler';
+import { initTray, showBackgroundNotification, setupJumpList } from './trayManager';
+import { windowManager } from './windowManager';
+import { openTerminalFromRequest } from './launchManager';
+import {
+  getAppIconPath,
+  registerExplorerContextMenu,
+} from './registryIntegration';
+import { scriptRunner } from './scripts/scriptRunner';
+import { scriptsStore } from './scripts/scriptsStore';
+import { logHop } from './launchDebugger';
 
 let mainWindow: BrowserWindow | null = null;
+let isQuitting = false;
 
 // Support custom --user-data-dir flag for test isolation
 const userDataArg = process.argv.find((arg) => arg.startsWith('--user-data-dir='));
@@ -18,49 +33,174 @@ if (userDataArg) {
   }
 }
 
+// Log cold-start H1
+logHop('H1', { event: 'cold-start', argv: process.argv });
+
 // Single instance lock
-const gotTheLock = app.requestSingleInstanceLock();
+const isE2E = Boolean(process.env.TERMINAL_MANAGER_E2E);
+const gotTheLock = isE2E ? true : app.requestSingleInstanceLock();
 if (!gotTheLock) {
   logger.warn('[Single Instance] Secondary instance launch blocked by single-instance lock. Quitting secondary process.');
   app.quit();
+  process.exit(0);
 } else {
-  app.on('second-instance', () => {
-    logger.info('[Single Instance] Secondary instance detected. Focusing main window.');
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
+  app.on('second-instance', (_event, commandLine) => {
+    logger.info('[Single Instance] Secondary instance launch detected with args:', commandLine);
+    logHop('H1', { event: 'second-instance', commandLine });
+    handleCliLaunch(parseCliArgs(commandLine));
   });
 }
 
-function createWindow(): void {
+function cleanupObsoleteToolsData(): void {
+  try {
+    const toolsDir = path.join(app.getPath('userData'), 'tools');
+    if (!fs.existsSync(toolsDir)) return;
+
+    const obsoleteNames = ['winutil-upstream', 'winutil-build', 'last-good', 'customization.json', 'winutil.ps1'];
+    for (const name of obsoleteNames) {
+      const itemPath = path.join(toolsDir, name);
+      if (fs.existsSync(itemPath)) {
+        fs.rmSync(itemPath, { recursive: true, force: true });
+        logger.info(`[Migration] Removed obsolete System Tools artifact: ${itemPath}`);
+      }
+    }
+  } catch (err) {
+    logger.warn('[Migration] Cleanup of obsolete tools data warning:', err);
+  }
+}
+
+export function showMainWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow(true);
+  } else {
+    if (!mainWindow.isVisible()) mainWindow.show();
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+}
+
+export function confirmQuit(): void {
+  const activeSessions = sessionManager.list();
+  const runnerState = scriptRunner.getState();
+  const isQueueRunning = runnerState.status === 'running';
+
+  if (isQueueRunning || activeSessions.length > 0) {
+    const focusedWin = BrowserWindow.getFocusedWindow() || mainWindow;
+    const title = isQueueRunning ? 'Quit Terminal Manager?' : 'Quit Terminal Manager?';
+    const message = isQueueRunning
+      ? 'A script execution queue is running. Quit and cancel it?'
+      : `There are ${activeSessions.length} active terminal session(s) running.`;
+    const detail = isQueueRunning
+      ? 'Quitting will cancel all currently running and queued scripts.'
+      : 'Closing will terminate all active background and standalone sessions. Do you want to quit?';
+
+    dialog
+      .showMessageBox(focusedWin || undefined as any, {
+        type: 'question',
+        buttons: ['Quit and Cancel', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1,
+        title,
+        message,
+        detail,
+      })
+      .then(({ response }) => {
+        if (response === 0) {
+          isQuitting = true;
+          scriptRunner.handleAppQuit();
+          sessionManager.killAll();
+          app.quit();
+        }
+      });
+  } else {
+    isQuitting = true;
+    scriptRunner.handleAppQuit();
+    sessionManager.killAll();
+    app.quit();
+  }
+}
+
+function handleCliLaunch(cliArgs: ParsedCliArgs): void {
+  // Support running sequence from CLI
+  if (cliArgs.runSequence) {
+    const target = cliArgs.runSequence.trim().toLowerCase();
+    const sequences = scriptsStore.getAllSequences();
+    const found = sequences.find(
+      (s) => s.id.toLowerCase() === target || s.name.toLowerCase() === target
+    );
+    if (found) {
+      logger.info(`[CLI Launch] Running requested sequence: "${found.name}" (${found.id})`);
+      scriptRunner.loadSequence(found.id, true);
+      if (!cliArgs.hidden) {
+        showMainWindow();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('app:navigate', 'scripts');
+        }
+      }
+    } else {
+      logger.warn(`[CLI Launch] Requested sequence not found: "${cliArgs.runSequence}"`);
+    }
+  }
+
+  if (cliArgs.hidden) {
+    logger.info('[CLI Launch] Launched with --hidden. Running in background tray.');
+    return;
+  }
+
+  const hasSpecificTerminalTarget = Boolean(
+    cliArgs.cwd ||
+    cliArgs.rawCwd ||
+    cliArgs.profile ||
+    cliArgs.newWindow ||
+    cliArgs.dock ||
+    cliArgs.cwdNotFound
+  );
+
+  if (hasSpecificTerminalTarget) {
+    const mode = cliArgs.newWindow ? 'window' : cliArgs.dock ? 'tab' : 'auto';
+    openTerminalFromRequest(
+      {
+        cwd: cliArgs.cwd || cliArgs.rawCwd,
+        profileId: cliArgs.profile,
+        mode,
+      },
+      showMainWindow
+    );
+    return;
+  }
+
+  // Normal activation: show main window
+  showMainWindow();
+}
+
+function createWindow(showImmediately = true): void {
   app.setName('terminal-manager');
-  logger.init();
-  logger.info(`[UserData Truth] Base Path: ${app.getPath('userData')}`);
-  logger.info(`[UserData Truth] Tools Path: ${path.join(app.getPath('userData'), 'tools')}`);
-  settingsStore.init();
   const currentSettings = settingsStore.get();
 
   const isWin = process.platform === 'win32';
   const isMac = process.platform === 'darwin';
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+  const iconPath = getAppIconPath();
 
   const preloadPath = path.join(__dirname, '../preload/index.js');
-  logger.info(`[Preload Check] Path: ${preloadPath}, Exists: ${fs.existsSync(preloadPath)}`);
 
-  // Configure CSP via Session headers
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    const cspHeader = isDev
-      ? "default-src 'self' http://localhost:* ws://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:*;"
-      : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self';";
+  // Configure CSP via Session headers safely
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: ['http://*/*', 'https://*/*', 'file://*/*'] },
+    (details, callback) => {
+      const responseHeaders = details.responseHeaders || {};
+      const cspHeader = isDev
+        ? "default-src 'self' http://localhost:* ws://localhost:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:*;"
+        : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self';";
 
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [cspHeader],
-      },
-    });
-  });
+      callback({
+        responseHeaders: {
+          ...responseHeaders,
+          'Content-Security-Policy': [cspHeader],
+        },
+      });
+    }
+  );
 
   const windowOptions: Electron.BrowserWindowConstructorOptions = {
     width: 1200,
@@ -70,17 +210,18 @@ function createWindow(): void {
     frame: false,
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     backgroundColor: '#0B0D10',
-    show: true,
+    show: false,
+    icon: iconPath,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
       webSecurity: true,
+      spellcheck: false,
     },
   };
 
-  // Windows 11 Mica / Acrylic material support
   if (isWin) {
     if (currentSettings.windowMaterial === 'mica') {
       windowOptions.backgroundMaterial = 'mica';
@@ -93,16 +234,44 @@ function createWindow(): void {
   }
 
   mainWindow = new BrowserWindow(windowOptions);
+  windowManager.register(mainWindow, 'main');
+  mainPerfTracker.record('windowCreated');
 
-  // Ready to show
-  mainWindow.once('ready-to-show', () => {
-    if (mainWindow) {
-      mainWindow.show();
-      mainWindow.focus();
+  const showWindow = () => {
+    if (showImmediately && mainWindow && !mainWindow.isDestroyed()) {
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+        mainWindow.focus();
+        mainPerfTracker.record('readyToShow');
+        mainPerfTracker.record('windowVisible');
+      }
+    }
+  };
+
+  mainWindow.once('ready-to-show', showWindow);
+  if (showImmediately) {
+    setTimeout(showWindow, 1200);
+  }
+
+  // Intercept window close for background (tray) mode
+  mainWindow.on('close', (event) => {
+    if (!isQuitting && settingsStore.get().keepRunningInBackground) {
+      event.preventDefault();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.hide();
+        showBackgroundNotification();
+      }
     }
   });
 
-  // Renderer crash, unresponsive, & load logging
+  mainWindow.on('closed', () => {
+    if (mainWindow) {
+      windowManager.unregister(mainWindow.id);
+    }
+    mainWindow = null;
+  });
+
+  // Renderer crash & unresponsiveness logging
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
     logger.error(`[Render Process Gone] Reason: ${details.reason}, Exit Code: ${details.exitCode}`);
     if (mainWindow && !mainWindow.isDestroyed() && details.reason !== 'clean-exit') {
@@ -115,26 +284,12 @@ function createWindow(): void {
     logger.warn('[Window Unresponsive] Main window has stopped responding.');
   });
 
-  mainWindow.webContents.on('preload-error', (_event, preloadErrPath, error) => {
-    logger.error(`[Preload Error] Path: ${preloadErrPath}`, error);
-  });
-
-  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
-    logger.error(`[Load Failed] Code ${errorCode}: ${errorDescription} at ${validatedURL}`);
-  });
-
-  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-    if (level >= 2) {
-      logger.warn(`[Renderer Console L${level}] ${message} (${sourceId}:${line})`);
-    }
-  });
-
-  // Open DevTools automatically in dev mode (skip during automated E2E testing)
+  // Open DevTools in dev mode (skip in automated test)
   if (isDev && process.env.TERMINAL_MANAGER_E2E !== '1') {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
-  // Block external navigation and new windows for security
+  // Block external navigation
   mainWindow.webContents.on('will-navigate', (event) => {
     event.preventDefault();
   });
@@ -148,7 +303,13 @@ function createWindow(): void {
 
   // Setup IPC Handlers
   setupIpcHandlers(mainWindow);
-  registerShellExpHandlers();
+
+  // Defer non-critical startup tasks
+  setImmediate(() => {
+    cleanupObsoleteToolsData();
+    registerShellExpHandlers();
+    shellPool.scheduleRefill(50);
+  });
 
   // Load URL or File
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -158,19 +319,14 @@ function createWindow(): void {
       logger.warn(`Failed to load dev server URL ${devServerUrl}, loading index.html file fallback`, err);
       const prodPath = path.join(__dirname, '../renderer/index.html');
       if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.loadFile(prodPath);
+        mainWindow.loadFile(prodPath).catch(() => {});
       }
     });
   } else {
     const prodPath = path.join(__dirname, '../renderer/index.html');
     logger.info(`[Renderer Load] Loading Production File: ${prodPath}`);
-    mainWindow.loadFile(prodPath);
+    mainWindow.loadFile(prodPath).catch(() => {});
   }
-
-  mainWindow.on('closed', () => {
-    ptyManager.killAll();
-    mainWindow = null;
-  });
 }
 
 app.on('child-process-gone', (_event, details) => {
@@ -178,22 +334,73 @@ app.on('child-process-gone', (_event, details) => {
 });
 
 app.whenReady().then(() => {
-  createWindow();
+  mainPerfTracker.record('appReady');
+  logger.init();
+  settingsStore.init();
+  profilesStore.init();
+  setupIpcHandlers();
+
+  const cliArgs = parseCliArgs(process.argv);
+  const settings = settingsStore.get();
+
+  // Setup Tray and Windows JumpList
+  initTray(() => mainWindow, () => showMainWindow(), () => confirmQuit());
+  setupJumpList();
+
+  // Unconditionally sync and rewrite Explorer context menu on every startup
+  registerExplorerContextMenu().catch((err) => {
+    logger.warn('[Startup] Context menu sync warning:', err);
+  });
+
+  // Determine initial window presentation
+  const shouldStartHidden = cliArgs.hidden || settings.startMinimizedToTray;
+  const hasSpecificTarget = Boolean(
+    cliArgs.cwd ||
+    cliArgs.rawCwd ||
+    cliArgs.profile ||
+    cliArgs.newWindow ||
+    cliArgs.dock ||
+    cliArgs.cwdNotFound
+  );
+
+  if (hasSpecificTarget) {
+    handleCliLaunch(cliArgs);
+  } else if (!shouldStartHidden) {
+    createWindow(true);
+  } else {
+    logger.info('[Startup] Starting minimized to system tray.');
+    createWindow(false);
+  }
+
+  // Check and run sequences configured to run when Terminal Manager starts
+  try {
+    const startupSequences = scriptsStore.getAllSequences().filter((s) => s.runOnAppStart);
+    for (const seq of startupSequences) {
+      logger.info(`[Startup] Auto-executing sequence configured for app start: "${seq.name}" (${seq.id})`);
+      scriptRunner.loadSequence(seq.id, true);
+    }
+  } catch (err) {
+    logger.warn('[Startup] Failed to evaluate startup sequences:', err);
+  }
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    showMainWindow();
   });
 });
 
 app.on('before-quit', () => {
-  ptyManager.killAll();
+  isQuitting = true;
+  scriptRunner.handleAppQuit();
+  sessionManager.killAll();
 });
 
 app.on('window-all-closed', () => {
-  ptyManager.killAll();
-  if (process.platform !== 'darwin') {
-    app.quit();
+  const keepRunning = settingsStore.get().keepRunningInBackground;
+  if (!keepRunning && process.platform !== 'darwin') {
+    if (!windowManager.hasAnyWindows() && sessionManager.list().length === 0) {
+      isQuitting = true;
+      sessionManager.killAll();
+      app.quit();
+    }
   }
 });

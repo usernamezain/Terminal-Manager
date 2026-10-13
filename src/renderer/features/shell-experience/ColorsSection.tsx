@@ -1,7 +1,8 @@
 import React from 'react';
 import { ShellExperienceSettings, PsReadLineColors } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
-import { Palette, RotateCcw } from 'lucide-react';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { RotateCcw } from 'lucide-react';
 
 interface ColorsSectionProps {
   settings: ShellExperienceSettings;
@@ -45,56 +46,98 @@ export const ColorsSection: React.FC<ColorsSectionProps> = ({ settings, onUpdate
   };
 
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Palette size={18} color="#38BDF8" />
-          <span>PSReadLine Syntax Highlighting Colors (17 Slots)</span>
-        </div>
-        <button className={styles.btnSecondary} onClick={handleResetDefaults}>
-          <RotateCcw size={14} /> Reset Defaults
-        </button>
-      </div>
-
-      <div className={styles.formGroup}>
-        <label>Live Syntax Sample Line</label>
-        <div className={styles.previewBox}>
-          <span style={{ color: currentColors.Command }}>Get-ChildItem</span>{' '}
-          <span style={{ color: currentColors.Parameter }}>-Path</span>{' '}
-          <span style={{ color: currentColors.String }}>&quot;C:\Users&quot;</span>{' '}
-          <span style={{ color: currentColors.Operator }}>|</span>{' '}
-          <span style={{ color: currentColors.Command }}>Where-Object</span>{' '}
-          <span style={{ color: currentColors.Variable }}>$_.Length</span>{' '}
-          <span style={{ color: currentColors.Operator }}>-gt</span>{' '}
-          <span style={{ color: currentColors.Number }}>100</span>{' '}
-          <span style={{ color: currentColors.Comment }}># Sample filter</span>
-        </div>
-      </div>
-
-      <div className={styles.gridTwo} style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-        {(Object.keys(UPSTREAM_DEFAULTS) as Array<keyof PsReadLineColors>).map((slot) => (
-          <div key={slot} className={styles.formGroup} style={{ background: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 6 }}>
-            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>{slot}</span>
-              <span style={{ fontSize: 11, color: currentColors[slot] }}>{currentColors[slot]}</span>
-            </label>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input
-                type="color"
-                value={currentColors[slot] || '#FFFFFF'}
-                onChange={(e) => handleColorChange(slot, e.target.value)}
-                style={{ border: 'none', background: 'transparent', cursor: 'pointer', width: 28, height: 28 }}
-              />
-              <input
-                className={styles.input}
-                style={{ flex: 1, padding: '4px 6px', fontSize: 12 }}
-                value={currentColors[slot]}
-                onChange={(e) => handleColorChange(slot, e.target.value)}
-              />
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <SettingsSection
+        title="PSReadLine Syntax Highlighting Colors"
+        description="Configure terminal syntax color tokens for PowerShell commands and expressions."
+        action={
+          <button className={layoutStyles.btnSecondary} onClick={handleResetDefaults}>
+            <RotateCcw size={13} />
+            <span>Reset Defaults</span>
+          </button>
+        }
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              padding: 12,
+              background: 'var(--bg-base)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 6,
+              fontFamily: 'var(--font-terminal)',
+              fontSize: 13,
+            }}
+          >
+            <span style={{ color: currentColors.Command }}>Get-ChildItem</span>{' '}
+            <span style={{ color: currentColors.Parameter }}>-Path</span>{' '}
+            <span style={{ color: currentColors.String }}>&quot;C:\Users&quot;</span>{' '}
+            <span style={{ color: currentColors.Operator }}>|</span>{' '}
+            <span style={{ color: currentColors.Command }}>Where-Object</span>{' '}
+            <span style={{ color: currentColors.Variable }}>$_.Length</span>{' '}
+            <span style={{ color: currentColors.Operator }}>-gt</span>{' '}
+            <span style={{ color: currentColors.Number }}>100</span>{' '}
+            <span style={{ color: currentColors.Comment }}># Sample filter</span>
           </div>
-        ))}
-      </div>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 12,
+          }}
+        >
+          {(Object.keys(UPSTREAM_DEFAULTS) as Array<keyof PsReadLineColors>).map((slot) => (
+            <div
+              key={slot}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '8px 12px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 6,
+              }}
+            >
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+                {slot}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="color"
+                  value={currentColors[slot] || '#FFFFFF'}
+                  onChange={(e) => handleColorChange(slot, e.target.value)}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    width: 24,
+                    height: 24,
+                    padding: 0,
+                  }}
+                />
+                <input
+                  type="text"
+                  value={currentColors[slot]}
+                  onChange={(e) => handleColorChange(slot, e.target.value)}
+                  style={{
+                    width: 72,
+                    height: 28,
+                    background: 'var(--bg-base)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 4,
+                    padding: '0 6px',
+                    fontSize: 12,
+                    color: 'var(--text-primary)',
+                    fontFamily: 'monospace',
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </SettingsSection>
     </div>
   );
 };

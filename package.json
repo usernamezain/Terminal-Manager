@@ -7,6 +7,7 @@
     "dev": "node scripts/dev.mjs",
     "start": "npx electron .",
     "build": "npx tsc && npx vite build --config vite.main.config.ts && npx vite build --config vite.preload.config.ts && npx vite build --config vite.renderer.config.ts",
+    "perf": "node scripts/measurePerf.mjs",
     "rebuild": "npx electron-rebuild -f -w node-pty",
     "postinstall": "npx electron-rebuild -f -w node-pty || node -e \"console.log('Skipping node-pty rebuild (Visual Studio C++ build tools not found). Using installed binary.')\""
   },
@@ -43,5 +44,25 @@
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
     "vitest": "^4.1.11"
+  },
+  "build": {
+    "appId": "com.terminalmanager.app",
+    "productName": "Terminal Manager",
+    "directories": {
+      "output": "dist-release"
+    },
+    "win": {
+      "icon": "build/icons/icon.ico",
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icons/icon.ico",
+      "uninstallerIcon": "build/icons/icon.ico",
+      "uninstallDisplayName": "Terminal Manager",
+      "deleteAppDataOnUninstall": false
+    }
   }
 }

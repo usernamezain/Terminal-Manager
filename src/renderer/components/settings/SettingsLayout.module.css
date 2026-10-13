@@ -1,0 +1,463 @@
+/* Shared Settings and Inner Panel Layout CSS Module */
+
+.panelView {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-terminal);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Unified Page Header (52px height) */
+.header {
+  height: var(--header-height, 52px);
+  min-height: var(--header-height, 52px);
+  padding: 0 var(--space-24);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-base);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.headerTitleGroup {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: var(--font-size-title, 18px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.pageSubtitle {
+  margin: 0;
+  font-size: var(--font-size-secondary, 12px);
+  color: var(--text-muted);
+}
+
+.closeButton {
+  width: var(--control-height, 32px);
+  height: var(--control-height, 32px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-control, 6px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+/* Two-column layout */
+.layoutBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Left Vertical Navigation */
+.navColumn {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-16) var(--space-8);
+  gap: var(--space-4);
+  overflow-y: auto;
+}
+
+.navGroupTitle {
+  font-size: var(--font-size-secondary, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-muted);
+  padding: var(--space-8) var(--space-8) var(--space-4) var(--space-8);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.navItem {
+  height: 34px;
+  padding: 0 var(--space-12);
+  border-radius: var(--radius-control, 6px);
+  font-size: var(--font-size-body, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+  width: 100%;
+}
+
+.navItemContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.navItemActive {
+  background: rgba(108, 140, 255, 0.12);
+  color: var(--accent);
+  border-color: rgba(108, 140, 255, 0.25);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.navSubItem {
+  height: 30px;
+  padding-left: var(--space-24);
+  font-size: var(--font-size-secondary, 12px);
+}
+
+/* Right Content Area: Single Scroll Container */
+.contentColumn {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--bg-terminal);
+}
+
+.contentContainer {
+  max-width: var(--max-content-width, 900px);
+  padding: var(--space-24);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* Section */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sectionHeading {
+  margin: 0;
+  font-size: var(--font-size-section, 14px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary);
+}
+
+.sectionDescription {
+  margin: var(--space-4) 0 0 0;
+  font-size: var(--font-size-secondary, 12px);
+  color: var(--text-secondary);
+}
+
+/* Settings Row */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-24);
+  padding: var(--space-12) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: 48px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: var(--font-size-body, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-primary);
+}
+
+.rowDescription {
+  font-size: var(--font-size-secondary, 12px);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.rowControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-12);
+  flex-shrink: 0;
+}
+
+/* Standard Form Controls (32px height) */
+.controlInput,
+.controlSelect {
+  height: var(--control-height, 32px);
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control, 6px);
+  padding: 0 var(--space-12);
+  font-size: var(--font-size-body, 13px);
+  color: var(--text-primary);
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-standard);
+  min-width: 180px;
+}
+
+.controlInput:focus,
+.controlSelect:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.controlNumber {
+  width: 90px;
+  min-width: 90px;
+}
+
+.actionBtn {
+  height: var(--control-height, 32px);
+  padding: 0 var(--space-12);
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control, 6px);
+  color: var(--text-primary);
+  font-size: var(--font-size-body, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.actionBtn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
+}
+
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6, 6px);
+  padding: 4px 10px;
+  border-radius: var(--radius-control, 6px);
+  font-size: var(--font-size-secondary, 12px);
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.statusPillActive {
+  background-color: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.25);
+  color: #4ADE80;
+}
+
+.controlToggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background-color: var(--bg-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+  outline: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.controlToggleActive {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.controlToggleThumb {
+  width: 16px;
+  height: 16px;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-full);
+  transform: translateX(2px);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.controlToggleActive .controlToggleThumb {
+  transform: translateX(20px);
+}
+
+.btnAction {
+  height: var(--control-height, 32px);
+  padding: 0 var(--space-16);
+  border-radius: var(--radius-control, 6px);
+  font-size: var(--font-size-secondary, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  transition: all var(--duration-fast) var(--ease-standard);
+  white-space: nowrap;
+}
+
+.btnPrimary {
+  composes: btnAction;
+  background-color: var(--accent);
+  color: #FFFFFF;
+  border: 1px solid transparent;
+}
+
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnSecondary {
+  composes: btnAction;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+.btnSecondary:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-secondary);
+}
+
+/* Radio Group / Segmented Control */
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+}
+
+.radioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control, 6px);
+  background-color: var(--bg-surface);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.radioOption:hover {
+  border-color: var(--border-strong);
+}
+
+.radioOptionActive {
+  border-color: var(--accent);
+  background-color: rgba(108, 140, 255, 0.06);
+}
+
+.radioInput {
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.radioText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.radioTitle {
+  font-size: var(--font-size-body, 13px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-primary);
+}
+
+.radioDesc {
+  font-size: var(--font-size-secondary, 12px);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Clean Dependency Table */
+.cleanTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-secondary, 12px);
+}
+
+.cleanTable th {
+  padding: var(--space-8) var(--space-12);
+  text-align: left;
+  font-size: var(--font-size-secondary, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.cleanTable td {
+  padding: var(--space-8) var(--space-12);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: middle;
+  height: 44px;
+}
+
+.statusDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  margin-right: var(--space-8);
+}
+
+.statusDotInstalled {
+  background-color: var(--success);
+}
+
+.statusDotMissing {
+  background-color: var(--danger);
+}

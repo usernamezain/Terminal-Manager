@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { ShellExperienceSettings } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
-import { Sparkles, Plus, Trash2 } from 'lucide-react';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import { SettingsRow } from '../../components/settings/SettingsRow';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface PredictionSectionProps {
   settings: ShellExperienceSettings;
@@ -36,90 +38,127 @@ export const PredictionSection: React.FC<PredictionSectionProps> = ({ settings, 
   };
 
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Sparkles size={18} color="#A78BFA" />
-          <span>PSReadLine Prediction & History Options</span>
-        </div>
-      </div>
-
-      <div className={styles.gridTwo}>
-        <div className={styles.formGroup}>
-          <label>Prediction Source</label>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <SettingsSection
+        title="Predictive Autocomplete & History"
+        description="Configure PSReadLine suggestion sources, view layout, and history limits."
+      >
+        <SettingsRow
+          label="Prediction Source"
+          description="Suggest completions from previous history and installed modules."
+        >
           <select
-            className={styles.select}
+            className={layoutStyles.controlSelect}
             value={pred.predictionSource}
             onChange={(e) => updatePred({ predictionSource: e.target.value as any })}
           >
-            <option value="HistoryAndPlugin">HistoryAndPlugin (Recommended)</option>
+            <option value="HistoryAndPlugin">History & Plugins (Recommended)</option>
             <option value="History">History Only</option>
             <option value="Plugin">Plugin Only</option>
             <option value="None">Disabled</option>
           </select>
-        </div>
+        </SettingsRow>
 
-        <div className={styles.formGroup}>
-          <label>Prediction View Style</label>
+        <SettingsRow
+          label="View Style"
+          description="Display suggestions inline as ghost text or in a popup list."
+        >
           <select
-            className={styles.select}
+            className={layoutStyles.controlSelect}
             value={pred.viewStyle}
             onChange={(e) => updatePred({ viewStyle: e.target.value as any })}
           >
-            <option value="ListView">ListView (Dropdown list)</option>
-            <option value="InlineView">InlineView (Inline ghost text)</option>
+            <option value="ListView">List View (Menu below cursor)</option>
+            <option value="InlineView">Inline View (Ghost text)</option>
           </select>
-        </div>
+        </SettingsRow>
 
-        <div className={styles.formGroup}>
-          <label>Maximum History Count</label>
+        <SettingsRow
+          label="Maximum History Count"
+          description="Maximum lines retained in persistent history file."
+        >
           <input
             type="number"
-            className={styles.input}
+            className={`${layoutStyles.controlInput} ${layoutStyles.controlNumber}`}
             value={pred.maximumHistoryCount}
+            min={500}
+            max={100000}
             onChange={(e) => updatePred({ maximumHistoryCount: parseInt(e.target.value) || 10000 })}
           />
-        </div>
+        </SettingsRow>
 
-        <div className={styles.formGroup}>
-          <label>Bell Style</label>
+        <SettingsRow
+          label="Terminal Bell Style"
+          description="Feedback behavior on invalid chords or errors."
+        >
           <select
-            className={styles.select}
+            className={layoutStyles.controlSelect}
             value={pred.bellStyle}
             onChange={(e) => updatePred({ bellStyle: e.target.value as any })}
           >
-            <option value="None">None</option>
+            <option value="None">None (Silent)</option>
             <option value="Audible">Audible</option>
             <option value="Visual">Visual</option>
           </select>
+        </SettingsRow>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Sensitive Keyword Exclusion Filters"
+        description="Commands containing these tokens will never be persisted to shell history."
+      >
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input
+            className={layoutStyles.controlInput}
+            style={{ flex: 1 }}
+            placeholder="Add keyword (e.g. password, apikey, secret)..."
+            value={newFilter}
+            onChange={(e) => setNewFilter(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addFilter()}
+          />
+          <button className={layoutStyles.btnSecondary} onClick={addFilter}>
+            <Plus size={13} />
+            <span>Add Filter</span>
+          </button>
         </div>
-      </div>
 
-      <div className={styles.sectionTitle} style={{ marginTop: 12 }}>
-        <span>Sensitive Line Filters (Do not save matching lines to history)</span>
-      </div>
-
-      <div style={{ display: 'flex', gap: 8 }}>
-        <input
-          className={styles.input}
-          style={{ flex: 1 }}
-          placeholder="e.g. token, apikey, secret"
-          value={newFilter}
-          onChange={(e) => setNewFilter(e.target.value)}
-        />
-        <button className={styles.btnSecondary} onClick={addFilter}>
-          <Plus size={14} /> Add Filter
-        </button>
-      </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-        {pred.sensitiveFilters.map((filter, idx) => (
-          <span key={idx} className={`${styles.chip} ${styles.chipWarning}`} style={{ gap: 8 }}>
-            {filter}
-            <Trash2 size={12} style={{ cursor: 'pointer' }} onClick={() => removeFilter(idx)} />
-          </span>
-        ))}
-      </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {pred.sensitiveFilters.map((keyword, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 4,
+                fontSize: 12,
+                color: 'var(--text-primary)',
+              }}
+            >
+              <span>{keyword}</span>
+              <button
+                type="button"
+                onClick={() => removeFilter(idx)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Remove keyword"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </SettingsSection>
     </div>
   );
 };

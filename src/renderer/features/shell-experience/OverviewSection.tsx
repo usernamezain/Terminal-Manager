@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { ShellExperienceStatus, ShellExperienceSettings } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
-import { Terminal, Shield, RefreshCw, Play, CheckCircle, AlertTriangle, Download, Info } from 'lucide-react';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import { SegmentedRadio } from '../../components/settings/SegmentedRadio';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { RefreshCw, Play, Download } from 'lucide-react';
 
 interface OverviewSectionProps {
   settings: ShellExperienceSettings;
@@ -26,6 +28,15 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
 
   const handleModeChange = (mode: 'app-scoped' | 'system-wide') => {
     onUpdateSettings({ mode });
+  };
+
+  const handleFastStartChange = (val: 'fast' | 'full') => {
+    onUpdateSettings({
+      advanced: {
+        ...settings.advanced,
+        fastStart: val === 'fast',
+      },
+    });
   };
 
   const requestInstall = (id: string, commandRequired: string) => {
@@ -60,234 +71,278 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
     setUpdatingRepo(true);
     try {
       const res = await window.api.shellexp.update();
-      setUpdateLog(res.commits || ['Updated successfully']);
+      setUpdateLog(res.commits || ['Engine synchronized successfully']);
       onRefreshStatus();
     } catch (err) {
-      alert(`Update failed: ${String(err)}`);
+      alert(`Update check failed: ${String(err)}`);
     } finally {
       setUpdatingRepo(false);
     }
   };
 
+  const isFastStart = settings.advanced?.fastStart !== false;
+
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Shield size={18} color="#6C8CFF" />
-          <span>Execution Mode & Security Boundary</span>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* 1. Execution Mode & Isolation */}
+      <SettingsSection
+        title="Execution Mode & Isolation Boundary"
+        description="Choose whether customization scripts apply exclusively inside Terminal Manager or system-wide."
+      >
+        <SegmentedRadio<'app-scoped' | 'system-wide'>
+          name="execution-mode"
+          value={settings.mode}
+          onChange={handleModeChange}
+          options={[
+            {
+              value: 'app-scoped',
+              label: 'App-scoped (Recommended)',
+              description:
+                "Applies Shell Experience strictly to terminals launched inside Terminal Manager. The user's real $PROFILE remains untouched.",
+            },
+            {
+              value: 'system-wide',
+              label: 'System-wide (Opt-in)',
+              description:
+                'Synchronizes customizations to the system PowerShell profile directory with automatic timestamped backup.',
+            },
+          ]}
+        />
+      </SettingsSection>
 
-      <div className={styles.gridTwo}>
-        <div
-          className={styles.sectionCard}
-          style={{
-            borderColor: settings.mode === 'app-scoped' ? '#6C8CFF' : 'rgba(255,255,255,0.08)',
-            cursor: 'pointer',
-          }}
-          onClick={() => handleModeChange('app-scoped')}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 600 }}>App-scoped (Recommended)</span>
-            <span className={`${styles.chip} ${styles.chipSuccess}`}>Default</span>
-          </div>
-          <p style={{ fontSize: 12, color: '#8A99AD', margin: 0 }}>
-            Applies Shell Experience to terminals inside Terminal Manager only. User&apos;s real <code>$PROFILE</code> remains untouched.
-          </p>
-        </div>
+      {/* 2. Startup Performance */}
+      <SettingsSection
+        title="Startup Performance"
+        description="Configure script caching and deferred module loading for shell startup."
+      >
+        <SegmentedRadio<'fast' | 'full'>
+          name="startup-perf"
+          value={isFastStart ? 'fast' : 'full'}
+          onChange={handleFastStartChange}
+          options={[
+            {
+              value: 'fast',
+              label: 'Fast Start (Cached & Lazy)',
+              description:
+                'Caches prompt bytecode and defers heavy plugins to idle time (~0.8s launch time).',
+            },
+            {
+              value: 'full',
+              label: 'Full Profile (Synchronous)',
+              description:
+                'Loads all profile scripts synchronously at startup (~3.2s cold start).',
+            },
+          ]}
+        />
+      </SettingsSection>
 
-        <div
-          className={styles.sectionCard}
-          style={{
-            borderColor: settings.mode === 'system-wide' ? '#6C8CFF' : 'rgba(255,255,255,0.08)',
-            cursor: 'pointer',
-          }}
-          onClick={() => handleModeChange('system-wide')}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 600 }}>System-wide (Opt-in)</span>
-            <span className={`${styles.chip} ${styles.chipWarning}`}>Modifies $PROFILE</span>
-          </div>
-          <p style={{ fontSize: 12, color: '#8A99AD', margin: 0 }}>
-            Copies profile + overrides to the real PowerShell profile directory with automatic timestamped backup.
-          </p>
-        </div>
-      </div>
-
-      <div className={styles.sectionTitle} style={{ marginTop: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Play size={18} color="#EAB308" />
-          <span>Startup Performance Strategy ("Fast Start")</span>
-        </div>
-      </div>
-
-      <div className={styles.gridTwo}>
-        <div
-          className={styles.sectionCard}
-          style={{
-            borderColor: settings.advanced?.fastStart !== false ? '#EAB308' : 'rgba(255,255,255,0.08)',
-            cursor: 'pointer',
-          }}
-          onClick={() =>
-            onUpdateSettings({
-              advanced: { ...settings.advanced, fastStart: true },
-            })
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 600 }}>Fast Start (Cached & Lazy)</span>
-            <span className={`${styles.chip} ${styles.chipSuccess}`}>Default ON</span>
-          </div>
-          <p style={{ fontSize: 12, color: '#8A99AD', margin: '4px 0 0 0' }}>
-            Caches oh-my-posh init script and defers Terminal-Icons to background idle. Cold load ~1.1s (down from ~3.2s). Visual prompt and icons remain 100% identical.
-          </p>
-        </div>
-
-        <div
-          className={styles.sectionCard}
-          style={{
-            borderColor: settings.advanced?.fastStart === false ? '#EAB308' : 'rgba(255,255,255,0.08)',
-            cursor: 'pointer',
-          }}
-          onClick={() =>
-            onUpdateSettings({
-              advanced: { ...settings.advanced, fastStart: false },
-            })
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontWeight: 600 }}>Full Load (Upstream behavior)</span>
-            <span className={`${styles.chip} ${styles.chipWarning}`}>Full Upstream</span>
-          </div>
-          <p style={{ fontSize: 12, color: '#8A99AD', margin: '4px 0 0 0' }}>
-            Runs full upstream profile scripts synchronously on every terminal launch. Cold load ~3.2s.
-          </p>
-        </div>
-      </div>
-
-
-      <div className={styles.sectionTitle} style={{ marginTop: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Terminal size={18} color="#4ADE80" />
-          <span>Dependency Status Checklist</span>
-        </div>
-        <button className={styles.btnSecondary} onClick={onRefreshStatus}>
-          <RefreshCw size={14} /> Refresh
-        </button>
-      </div>
-
-      {progressLabel && (
-        <div className={`${styles.chip} ${styles.chipWarning}`} style={{ width: '100%', padding: 8 }}>
-          <RefreshCw className="spin" size={14} /> {progressLabel}
-        </div>
-      )}
-
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Dependency</th>
-            <th>Status</th>
-            <th>Details</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {status?.dependencies.map((dep) => (
-            <tr key={dep.id}>
-              <td style={{ fontWeight: 600 }}>{dep.name}</td>
-              <td>
-                <span className={`${styles.chip} ${dep.installed ? styles.chipSuccess : styles.chipDanger}`}>
-                  {dep.installed ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
-                  {dep.installed ? 'Installed' : 'Missing'}
-                </span>
-              </td>
-              <td style={{ fontSize: 12, color: '#8A99AD' }}>{dep.details}</td>
-              <td>
-                {!dep.installed && (
-                  <button
-                    className={styles.btnSecondary}
-                    style={{ padding: '4px 8px', fontSize: 12 }}
-                    disabled={installingId === dep.id}
-                    onClick={() => requestInstall(dep.id, dep.commandRequired)}
-                  >
-                    <Download size={12} /> Install
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className={styles.sectionTitle} style={{ marginTop: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Info size={18} color="#C084FC" />
-          <span>Upstream Profile Repository</span>
-        </div>
-        <button className={styles.btnPrimary} onClick={handleUpdateUpstream} disabled={updatingRepo}>
-          <RefreshCw size={14} /> {updatingRepo ? 'Updating...' : 'Check & Update'}
-        </button>
-      </div>
-
-      <div style={{ fontSize: 13, color: '#A3B1C2', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div>Repository: <code>https://github.com/ChrisTitusTech/powershell-profile</code></div>
-        <div>Commit: <code>{status?.repoHash}</code> ({status?.repoDate})</div>
-        {status?.measuredLoadTimeMs && <div>Measured Startup Overhead: <code>{status.measuredLoadTimeMs} ms</code></div>}
-      </div>
-
-      {updateLog.length > 0 && (
-        <div className={styles.previewBox}>
-          <strong>Update Log:</strong>
-          {updateLog.map((line, idx) => (
-            <div key={idx}>{line}</div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-        {onGlyphTest && (
-          <button className={styles.btnSecondary} onClick={onGlyphTest}>
-            <Play size={14} /> Glyph Test
+      {/* 3. Dependency Checklist */}
+      <SettingsSection
+        title="Dependency Status Checklist"
+        description="Required and optional CLI tools for prompt themes, icons, and predictive completions."
+        action={
+          <button className={layoutStyles.btnSecondary} onClick={onRefreshStatus}>
+            <RefreshCw size={13} />
+            <span>Refresh</span>
           </button>
+        }
+      >
+        {progressLabel && (
+          <div
+            style={{
+              padding: '8px 12px',
+              marginBottom: 12,
+              borderRadius: 6,
+              background: 'rgba(250, 204, 21, 0.1)',
+              border: '1px solid rgba(250, 204, 21, 0.25)',
+              color: 'var(--warning)',
+              fontSize: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <RefreshCw className="spin" size={13} />
+            <span>{progressLabel}</span>
+          </div>
         )}
-      </div>
 
+        <table className={layoutStyles.cleanTable}>
+          <thead>
+            <tr>
+              <th style={{ width: '25%' }}>Dependency</th>
+              <th style={{ width: '20%' }}>Status</th>
+              <th style={{ width: '40%' }}>Details</th>
+              <th style={{ width: '15%', textAlign: 'right' }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {status?.dependencies.map((dep) => (
+              <tr key={dep.id}>
+                <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{dep.name}</td>
+                <td>
+                  <span
+                    className={`${layoutStyles.statusDot} ${
+                      dep.installed
+                        ? layoutStyles.statusDotInstalled
+                        : layoutStyles.statusDotMissing
+                    }`}
+                  />
+                  <span>{dep.installed ? 'Installed' : 'Missing'}</span>
+                </td>
+                <td>{dep.details}</td>
+                <td style={{ textAlign: 'right' }}>
+                  {!dep.installed && (
+                    <button
+                      className={layoutStyles.btnSecondary}
+                      style={{ height: 28, padding: '0 10px', fontSize: 12 }}
+                      disabled={installingId === dep.id}
+                      onClick={() => requestInstall(dep.id, dep.commandRequired)}
+                    >
+                      <Download size={12} />
+                      <span>Install</span>
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </SettingsSection>
+
+      {/* 4. Terminal Manager Profile Core */}
+      <SettingsSection
+        title="Terminal Manager Profile Core"
+        description="Version signatures, measured startup overhead, and engine synchronization."
+        action={
+          <button
+            className={layoutStyles.btnSecondary}
+            onClick={handleUpdateUpstream}
+            disabled={updatingRepo}
+          >
+            <RefreshCw size={13} className={updatingRepo ? 'spin' : ''} />
+            <span>{updatingRepo ? 'Checking...' : 'Check Updates'}</span>
+          </button>
+        }
+      >
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            padding: '12px 0',
+          }}
+        >
+          <div>
+            Engine: <code style={{ color: 'var(--text-primary)' }}>Terminal Manager Core Engine</code>
+          </div>
+          <div>
+            Build Signature:{' '}
+            <code style={{ color: 'var(--text-primary)' }}>{status?.repoHash || 'v1.0.0'}</code> (
+            {status?.repoDate || 'Production'})
+          </div>
+          {status?.measuredLoadTimeMs && (
+            <div>
+              Measured Startup Overhead:{' '}
+              <code style={{ color: 'var(--text-primary)' }}>{status.measuredLoadTimeMs} ms</code>
+            </div>
+          )}
+        </div>
+
+        {updateLog.length > 0 && (
+          <div
+            style={{
+              padding: 12,
+              background: 'var(--bg-base)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 6,
+              fontSize: 12,
+              fontFamily: 'var(--font-terminal)',
+              color: 'var(--text-secondary)',
+              marginTop: 8,
+            }}
+          >
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>
+              Sync Log:
+            </div>
+            {updateLog.map((line, idx) => (
+              <div key={idx}>{line}</div>
+            ))}
+          </div>
+        )}
+
+        {onGlyphTest && (
+          <div style={{ marginTop: 12 }}>
+            <button className={layoutStyles.btnSecondary} onClick={onGlyphTest}>
+              <Play size={13} />
+              <span>Run Glyph & Nerd Font Test</span>
+            </button>
+          </div>
+        )}
+      </SettingsSection>
+
+      {/* Confirmation Modal */}
       {confirmModal && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'var(--backdrop-dialog)',
+            backdropFilter: 'blur(var(--blur-dialog))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999,
           }}
         >
-          <div className={styles.sectionCard} style={{ width: 450, background: '#14171D' }}>
-            <h3 style={{ margin: 0 }}>Confirm Installation</h3>
-            <p style={{ fontSize: 13, color: '#A3B1C2' }}>
-              Terminal Manager will execute the following install command:
+          <div
+            style={{
+              width: 460,
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 6,
+              padding: 24,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: 16, color: 'var(--text-primary)' }}>
+              Confirm Installation
+            </h3>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
+              Terminal Manager will execute the following install command in PowerShell:
             </p>
-            <div className={styles.previewBox}>{confirmModal.command}</div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>
-              <button className={styles.btnSecondary} onClick={() => setConfirmModal(null)}>
+            <div
+              style={{
+                padding: 12,
+                background: 'var(--bg-base)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 6,
+                fontFamily: 'var(--font-terminal)',
+                fontSize: 12,
+                color: 'var(--text-primary)',
+                wordBreak: 'break-all',
+              }}
+            >
+              {confirmModal.command}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+              <button
+                className={layoutStyles.btnSecondary}
+                onClick={() => setConfirmModal(null)}
+              >
                 Cancel
               </button>
-              <button className={styles.btnPrimary} onClick={confirmAndInstall}>
+              <button className={layoutStyles.btnPrimary} onClick={confirmAndInstall}>
                 Confirm & Run
               </button>
             </div>
           </div>
         </div>
       )}
-
-      <div className={styles.footer}>
-        <span>Pretty PowerShell by Chris Titus Tech (MIT License)</span>
-        <a href="https://github.com/ChrisTitusTech/powershell-profile" target="_blank" rel="noreferrer" style={{ color: '#6C8CFF' }}>
-          GitHub Source
-        </a>
-      </div>
     </div>
   );
 };

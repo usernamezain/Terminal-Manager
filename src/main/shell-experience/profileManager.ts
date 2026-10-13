@@ -26,7 +26,7 @@ export class ProfileManager {
       if (fs.existsSync(profileInRepo)) {
         const stat = fs.statSync(profileInRepo);
         const content = fs.readFileSync(profileInRepo, 'utf8');
-        if (stat.size < 1500 || !content.includes('Chris Titus Tech')) {
+        if (stat.size < 500 || !content.trim()) {
           if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
           const backupPath = path.join(backupDir, `Microsoft.PowerShell_profile.ps1.stub-backup-${timestamp}`);
           logger.info(`Moving legacy stub profile to ${backupPath}`);
@@ -179,7 +179,7 @@ export class ProfileManager {
         .trim();
       return { hash, date, message };
     } catch {
-      return { hash: 'main', date: new Date().toISOString().split('T')[0] || '', message: 'ChrisTitusTech Profile' };
+      return { hash: 'main', date: new Date().toISOString().split('T')[0] || '', message: 'Terminal Manager Profile Core' };
     }
   }
 

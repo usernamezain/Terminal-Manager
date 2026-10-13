@@ -85,12 +85,6 @@ export const ShellExperienceSettingsSchema = z.object({
   editor: z.string().default('auto'),
   showHelpOnLaunch: z.boolean().default(false),
   startupInput: z.string().default(''),
-  tools: z.object({
-    zoxideEnabled: z.boolean().default(true),
-    zoxideCmd: z.string().default('z'),
-    ohMyPoshEnabled: z.boolean().default(true),
-    importChocolatey: z.boolean().default(true),
-  }).default({}),
   advanced: z.object({
     fastStart: z.boolean().default(true),
     debugOverride: z.boolean().default(false),
@@ -134,7 +128,7 @@ export interface UpstreamCommandInfo {
   name: string;
   alias?: string;
   description: string;
-  category: 'Git' | 'File' | 'Process' | 'System' | 'Profile' | 'WinUtil' | 'Navigation';
+  category: 'Git' | 'File' | 'Process' | 'System' | 'Profile' | 'Navigation';
   defaultEnabled: boolean;
 }
 

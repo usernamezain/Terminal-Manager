@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShellExperienceSettings, ThemeInfo } from '../../../shared/shellExperienceTypes';
-import styles from './ShellExperience.module.css';
-import { Palette, Copy, RotateCcw } from 'lucide-react';
+import { SettingsSection } from '../../components/settings/SettingsSection';
+import { SettingsRow } from '../../components/settings/SettingsRow';
+import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { RotateCcw, Copy } from 'lucide-react';
 
 interface PromptSectionProps {
   settings: ShellExperienceSettings;
@@ -40,61 +42,92 @@ export const PromptSection: React.FC<PromptSectionProps> = ({ settings, onUpdate
   };
 
   return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionTitle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Palette size={18} color="#FACC15" />
-          <span>Oh My Posh Prompt Gallery & Customizer</span>
-        </div>
-        <button className={styles.btnSecondary} onClick={handleResetCobalt2}>
-          <RotateCcw size={14} /> Reset to cobalt2
-        </button>
-      </div>
-
-      <div className={styles.formGroup}>
-        <label>Active Theme</label>
-        <select
-          className={styles.select}
-          value={selectedTheme}
-          onChange={(e) => handleSelectTheme(e.target.value)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <SettingsSection
+        title="Prompt Theme Selection"
+        description="Choose or duplicate an Oh My Posh shell prompt theme."
+        action={
+          <button className={layoutStyles.btnSecondary} onClick={handleResetCobalt2}>
+            <RotateCcw size={13} />
+            <span>Reset to cobalt2</span>
+          </button>
+        }
+      >
+        <SettingsRow
+          label="Active Prompt Theme"
+          description="Select an installed preset or custom configuration."
         >
-          {themes.map((t) => (
-            <option key={t.name} value={t.name}>
-              {t.name} {t.isCustom ? '(Custom)' : ''}
-            </option>
-          ))}
-        </select>
-      </div>
+          <select
+            className={layoutStyles.controlSelect}
+            value={selectedTheme}
+            onChange={(e) => handleSelectTheme(e.target.value)}
+          >
+            {themes.map((t) => (
+              <option key={t.name} value={t.name}>
+                {t.name} {t.isCustom ? '(Custom)' : ''}
+              </option>
+            ))}
+          </select>
+        </SettingsRow>
+      </SettingsSection>
 
-      <div className={styles.formGroup}>
-        <label>Real-Time Prompt Preview</label>
-        <div className={styles.previewBox} dangerouslySetInnerHTML={{ __html: formatAnsiToHtml(ansiPreview) }} />
-      </div>
-
-      <div className={styles.sectionTitle} style={{ marginTop: 12 }}>
-        <span>Theme JSON Editor</span>
-      </div>
-
-      <textarea
-        className={styles.input}
-        rows={8}
-        style={{ fontFamily: 'monospace', fontSize: 12 }}
-        value={rawJson}
-        onChange={(e) => setRawJson(e.target.value)}
-      />
-
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button
-          className={styles.btnSecondary}
-          onClick={() => {
-            const newName = `${selectedTheme}-copy`;
-            handleSelectTheme(newName);
-            alert(`Duplicated theme as ${newName}`);
+      <SettingsSection
+        title="Live ANSI Prompt Preview"
+        description="Rendered output of the current prompt layout."
+      >
+        <div
+          style={{
+            padding: 16,
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 6,
+            fontFamily: 'var(--font-terminal)',
+            fontSize: 13,
+            lineHeight: 1.5,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            overflowX: 'auto',
           }}
-        >
-          <Copy size={14} /> Duplicate Theme
-        </button>
-      </div>
+          dangerouslySetInnerHTML={{ __html: formatAnsiToHtml(ansiPreview) }}
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Theme JSON Editor"
+        description="Inspect or customize segment blocks, glyphs, and ANSI colors."
+        action={
+          <button
+            className={layoutStyles.btnSecondary}
+            onClick={() => {
+              const newName = `${selectedTheme}-copy`;
+              handleSelectTheme(newName);
+              alert(`Duplicated theme as ${newName}`);
+            }}
+          >
+            <Copy size={13} />
+            <span>Duplicate Theme</span>
+          </button>
+        }
+      >
+        <textarea
+          style={{
+            width: '100%',
+            height: 180,
+            padding: 12,
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 6,
+            fontFamily: 'var(--font-terminal)',
+            fontSize: 12,
+            color: 'var(--text-primary)',
+            outline: 'none',
+            resize: 'vertical',
+            boxSizing: 'border-box',
+          }}
+          value={rawJson}
+          onChange={(e) => setRawJson(e.target.value)}
+        />
+      </SettingsSection>
     </div>
   );
 };

@@ -11,7 +11,7 @@
 
 .modal {
   width: 100%;
-  max-width: 520px;
+  max-width: 560px;
   max-height: 85vh;
   background-color: var(--bg-elevated);
   border: var(--border-popover);
@@ -23,18 +23,46 @@
 }
 
 .header {
-  height: 48px;
-  padding: 0 var(--space-20);
+  height: 52px;
+  padding: 0 var(--space-16);
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
 }
 
-.title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
+.headerTabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.tabBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.tabBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
+}
+
+.tabBtnActive {
+  background: rgba(108, 140, 255, 0.14);
+  color: var(--accent);
+  border-color: rgba(108, 140, 255, 0.28);
+  font-weight: var(--font-weight-semibold);
 }
 
 .closeButton {
@@ -44,7 +72,10 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
+  cursor: pointer;
   transition: all var(--duration-fast) var(--ease-standard);
 }
 
@@ -59,6 +90,28 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
+}
+
+.cardSection {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-8);
+  margin-bottom: var(--space-4);
 }
 
 .fieldGroup {
@@ -76,20 +129,21 @@
 .select,
 .input {
   width: 100%;
-  height: 34px;
+  height: 36px;
   background-color: var(--bg-base);
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   padding: 0 var(--space-12);
   font-size: var(--font-size-sm);
   outline: none;
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  transition: all var(--duration-fast) var(--ease-standard);
 }
 
 .select:focus,
 .input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 .row {
@@ -106,10 +160,13 @@
   font-size: var(--font-size-sm);
   color: var(--text-primary);
   cursor: pointer;
+  user-select: none;
 }
 
 .checkbox {
   width: 16px;
   height: 16px;
   accent-color: var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
