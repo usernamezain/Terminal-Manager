@@ -1,568 +1,517 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Copy, Check } from 'lucide-react';
-import { SettingsHeader } from '../../components/settings/SettingsHeader';
-import styles from '../../components/settings/SettingsLayout.module.css';
-
-interface DocItem {
-  id: string;
-  title: string;
-  summary: string;
-  steps: string[];
-  codeExample?: string;
-  codeLanguage?: string;
-}
-
-interface DocTopic {
-  id: string;
-  title: string;
-  description: string;
-  items: DocItem[];
-}
-
-const DOC_TOPICS: DocTopic[] = [
-  {
-    id: 'appearance',
-    title: 'Appearance & Themes',
-    description: 'Customize themes, window materials, typography, and cursor settings.',
-    items: [
-      {
-        id: 'themes',
-        title: 'Color Palettes & Themes',
-        summary:
-          'Terminal Manager provides dark themes built on HSL color tokens. You can switch between Midnight and Graphite or define custom overrides.',
-        steps: [
-          'Open Settings (Ctrl+, or click the Settings icon in the sidebar).',
-          'Under Preferences > General, locate Theme Palette.',
-          'Select Midnight (default deep black) or Graphite (slate charcoal).',
-          'The changes apply immediately across chrome, sidebar, and tab surfaces.',
-        ],
-        codeExample: ':root {\n  --bg-base: #0B0D10;\n  --bg-surface: rgba(20, 23, 28, 0.72);\n  --accent: #6C8CFF;\n}',
-        codeLanguage: 'css',
-      },
-      {
-        id: 'materials',
-        title: 'Window Backdrop Materials',
-        summary:
-          'Configure native Windows 11 window backdrop blending for desktop integration.',
-        steps: [
-          'In General Settings, locate the Window Material dropdown.',
-          'Choose Mica for native Windows 11 wallpaper tinting, Acrylic for translucent glass, or Solid for high contrast.',
-          'The window frame automatically manages hardware acceleration.',
-        ],
-      },
-      {
-        id: 'typography',
-        title: 'Typography & Cursor Settings',
-        summary:
-          'Configure font sizing, density spacing, cursor shapes, and blink behavior.',
-        steps: [
-          'Navigate to General Settings > Terminal & Typography.',
-          'Adjust Font Size between 8px and 36px.',
-          'Select UI Density (Compact, Normal, or Comfortable).',
-          'Choose Cursor Style (Block, Underline, or Bar) and toggle Enable Cursor Blinking.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'shellexp',
-    title: 'Shell Engine & Performance',
-    description: 'Execution isolation boundaries, fast startup caching, and upstream synchronization.',
-    items: [
-      {
-        id: 'isolation',
-        title: 'Execution Mode & Isolation',
-        summary:
-          'Terminal Manager allows you to isolate customization scripts to app-launched sessions or synchronize them system-wide.',
-        steps: [
-          'Navigate to Settings > Shell Experience > Overview.',
-          'Select App-scoped to keep your user $PROFILE completely untouched.',
-          'Select System-wide if you want the customizations applied to standalone PowerShell consoles outside the app.',
-        ],
-        codeExample: '# In App-scoped mode, user profile remains untouched:\nGet-Content $PROFILE  # Original profile preserved',
-        codeLanguage: 'powershell',
-      },
-      {
-        id: 'faststart',
-        title: 'Fast Start Optimization',
-        summary:
-          'Fast Start caches compiled script bytecode and defers secondary modules to background idle time, reducing cold terminal startup from ~3.2s to under 0.9s.',
-        steps: [
-          'Under Shell Experience > Overview, select Fast Start (Cached & Lazy).',
-          'The engine automatically compiles cached profile stubs.',
-          'Secondary plugins and aliases load non-blockingly after the initial prompt is ready.',
-        ],
-      },
-      {
-        id: 'updates',
-        title: 'Engine Synchronization',
-        summary:
-          'Check for engine patches and profile core updates with one click.',
-        steps: [
-          'Open Shell Experience > Overview.',
-          'Under Terminal Manager Profile Core, click Check Updates.',
-          'The engine verifies git signatures and updates the profile runtime safely.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'syntax',
-    title: 'Syntax Highlighting & Prompts',
-    description: 'PSReadLine syntax color tokens, Oh My Posh themes, and predictive completions.',
-    items: [
-      {
-        id: 'prompts',
-        title: 'Oh My Posh Prompt Gallery',
-        summary:
-          'Preview, select, and duplicate prompt themes with live ANSI rendering.',
-        steps: [
-          'Navigate to Settings > Shell Experience > Prompt Gallery.',
-          'Select a theme from the dropdown (such as cobalt2, agnoster, pure, or atomic) to see an instant live preview.',
-          'Click Duplicate Theme to create an editable custom JSON file.',
-          'Edit segment blocks and git indicators in the Theme JSON Editor.',
-        ],
-        codeExample: '{\n  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",\n  "blocks": [\n    {\n      "type": "prompt",\n      "alignment": "left",\n      "segments": [\n        { "type": "path", "style": "powerline" }\n      ]\n    }\n  ]\n}',
-        codeLanguage: 'json',
-      },
-      {
-        id: 'colors',
-        title: 'PSReadLine Syntax Colors',
-        summary:
-          'Customize syntax coloring across 17 distinct syntax token slots.',
-        steps: [
-          'Open Settings > Shell Experience > Syntax Colors.',
-          'Pick any token slot (Command, Parameter, Operator, String, Variable, Number, etc.).',
-          'Use the color picker or input a hex color value.',
-          'Inspect the live syntax line to verify contrast and readability.',
-        ],
-      },
-      {
-        id: 'predictions',
-        title: 'IntelliSense & Predictions',
-        summary:
-          'Configure history and plugin predictive completions and sensitive word filters.',
-        steps: [
-          'Open Settings > Shell Experience > Predictions.',
-          'Set Prediction Source to History & Plugins.',
-          'Select View Style: Inline View for ghost text or List View for popup menu.',
-          'Add keywords (e.g. apikey, token, pass) to Sensitive Filters to prevent storing them in history.',
-        ],
-      },
-      {
-        id: 'icons',
-        title: 'File & Folder Glyphs',
-        summary:
-          'Enable Nerd Font glyphs in folder directory outputs (dir, ls, Get-ChildItem).',
-        steps: [
-          'Go to Settings > Shell Experience > File Icons.',
-          'Toggle Enable Glyphs.',
-          'Select your Color Theme (Default, Vibrant, Minimal) and Icon Set.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'keys',
-    title: 'Keybindings & Shortcuts',
-    description: 'Global app shortcuts and PSReadLine command line chord handlers.',
-    items: [
-      {
-        id: 'global-keys',
-        title: 'Application Shortcuts',
-        summary:
-          'Default keyboard chords for workspace and window navigation.',
-        steps: [
-          'New Terminal Tab: Ctrl+Shift+T',
-          'Split Pane Row: Ctrl+Shift+D',
-          'Split Pane Column: Ctrl+Shift+E',
-          'Close Focused Pane: Ctrl+Shift+W',
-          'Toggle Maximize Pane: Ctrl+Shift+Enter',
-          'Spatial Navigation: Alt+Up, Alt+Down, Alt+Left, Alt+Right',
-          'Open Documentation: F1 or Ctrl+Shift+D',
-          'Open Settings: Ctrl+,',
-          'Close Panel / Dismiss: Escape',
-        ],
-      },
-      {
-        id: 'shell-keys',
-        title: 'PSReadLine Keybinding Chords',
-        summary:
-          'Map custom editing keys to PSReadLine functions.',
-        steps: [
-          'Navigate to Settings > Shell Experience > Keybindings.',
-          'View active bindings such as Ctrl+w (BackwardDeleteWord), Alt+d (DeleteWord), and Tab (MenuComplete).',
-          'To add a binding, enter a shortcut chord, select the handler function, and click Add Binding.',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'commands',
-    title: 'Aliases & Custom Commands',
-    description: 'Productivity command shortcuts, Git aliases, and custom PowerShell functions.',
-    items: [
-      {
-        id: 'builtin-aliases',
-        title: 'Built-in Productivity Aliases',
-        summary:
-          'Terminal Manager provides fast aliases for common Git and file tasks.',
-        steps: [
-          'Open Settings > Shell Experience > Commands & Aliases.',
-          'Toggle any alias on or off (e.g. gs for git status, lazyg for add+commit+push, mkcd for create and cd, trash for safe Recycle Bin deletion).',
-          'Disabled aliases are automatically excluded during profile generation.',
-        ],
-        codeExample: '# Built-in shortcuts ready to use:\ngs       # git status\nmkcd dev # mkdir dev; cd dev\ntrash tmp.log # Safely send to Recycle Bin',
-        codeLanguage: 'powershell',
-      },
-      {
-        id: 'custom-aliases',
-        title: 'Creating Custom Functions',
-        summary:
-          'Write custom PowerShell functions with built-in syntax verification.',
-        steps: [
-          'In Commands & Aliases, scroll to Custom Aliases & Functions.',
-          'Enter an Alias Name and choose Custom Function.',
-          'Enter your PowerShell script body.',
-          'Click Test PowerShell Syntax to validate script syntax before saving.',
-        ],
-        codeExample: 'function myDeploy($env) {\n  Write-Host "Deploying to $env..." -ForegroundColor Cyan\n  npm run build\n}',
-        codeLanguage: 'powershell',
-      },
-    ],
-  },
-  {
-    id: 'advanced',
-    title: 'Advanced Scripting',
-    description: 'User-managed PowerShell script regions, environment variables, and modules.',
-    items: [
-      {
-        id: 'user-region',
-        title: 'Custom User Code Region',
-        summary:
-          'Inject arbitrary PowerShell code that is preserved permanently at the end of the profile.',
-        steps: [
-          'Navigate to Settings > Shell Experience > Advanced Scripting.',
-          'Enter custom environment variable definitions, path modifications, or custom module imports into the User Code Region.',
-          'Click Save User Code.',
-          'Terminal Manager guarantees this code block is appended and untouched across app updates.',
-        ],
-        codeExample: '# User Code Region Example:\n$env:EDITOR = "code"\n$env:PAGER = "cat"\nImport-Module -Name posh-git -ErrorAction SilentlyContinue',
-        codeLanguage: 'powershell',
-      },
-    ],
-  },
-];
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Search, X, ChevronRight, ChevronDown } from 'lucide-react';
+import { loadAllDocTopics } from './docsLoader';
+import { DocsSearchIndex } from './docsSearch';
+import { SearchResultItem } from './docsTypes';
+import { useWorkspaceStore as useUIWorkspaceStore } from '../../store/useWorkspaceStore';
+import styles from './CustomizationDocsView.module.css';
 
 interface CustomizationDocsViewProps {
-  onClose?: () => void;
+  onClose: () => void;
+  initialTopicId?: string;
+  initialSectionId?: string;
 }
 
-export const CustomizationDocsView: React.FC<CustomizationDocsViewProps> = ({ onClose }) => {
-  const [selectedTopicId, setSelectedTopicId] = useState<string>('appearance');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
+export const CustomizationDocsView: React.FC<CustomizationDocsViewProps> = ({
+  onClose,
+  initialTopicId,
+  initialSectionId,
+}) => {
+  // Load topics at build time via docsLoader (Vite import.meta.glob)
+  const topics = useMemo(() => loadAllDocTopics(), []);
 
-  // Esc key closes documentation if onClose is provided
+  // Initialize search indexer
+  const searchIndex = useMemo(() => {
+    const idx = new DocsSearchIndex();
+    idx.indexTopics(topics);
+    return idx;
+  }, [topics]);
+
+  // Deep linking state from UI store
+  const docsTargetTopic = useUIWorkspaceStore((s) => (s as any).docsTargetTopic);
+  const docsTargetSection = useUIWorkspaceStore((s) => (s as any).docsTargetSection);
+  const clearDocsTarget = useUIWorkspaceStore((s) => (s as any).clearDocsTarget);
+
+  // Active topic ID
+  const [selectedTopicId, setSelectedTopicId] = useState<string>(() => {
+    return docsTargetTopic || initialTopicId || (topics[0] ? topics[0].id : 'getting-started');
+  });
+
+  // Expanded tree topics in left sidebar
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const t of topics) {
+      initial[t.id] = t.id === selectedTopicId;
+    }
+    return initial;
+  });
+
+  // Active section currently in view
+  const [activeSectionId, setActiveSectionId] = useState<string>('');
+
+  // Search query & results
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
+
+  // Scroll positions remembered per topic during session
+  const topicScrollPositions = useRef<Map<string, number>>(new Map());
+
+  // Refs for scroll and DOM containers
+  const articleScrollRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Active topic object
+  const activeTopic = useMemo(() => {
+    return topics.find((t) => t.id === selectedTopicId) || topics[0] || null;
+  }, [topics, selectedTopicId]);
+
+  // Index of active topic for Prev/Next navigation
+  const activeTopicIndex = useMemo(() => {
+    return topics.findIndex((t) => t.id === selectedTopicId);
+  }, [topics, selectedTopicId]);
+
+  const prevTopic = activeTopicIndex > 0 ? topics[activeTopicIndex - 1] : null;
+  const nextTopic = activeTopicIndex < topics.length - 1 ? topics[activeTopicIndex + 1] : null;
+
+  // Handle deep link target changes
   useEffect(() => {
-    if (!onClose) return;
+    if (docsTargetTopic) {
+      setSelectedTopicId(docsTargetTopic);
+      setExpandedTopics((prev) => ({ ...prev, [docsTargetTopic]: true }));
+
+      if (docsTargetSection) {
+        setTimeout(() => {
+          scrollToSection(docsTargetSection);
+        }, 100);
+      }
+      if (clearDocsTarget) clearDocsTarget();
+    }
+  }, [docsTargetTopic, docsTargetSection, clearDocsTarget]);
+
+  // Initial section scroll on mount if provided
+  useEffect(() => {
+    if (initialSectionId) {
+      setTimeout(() => {
+        scrollToSection(initialSectionId);
+      }, 150);
+    }
+  }, [initialSectionId]);
+
+  // Search input change handler
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value;
+    setSearchQuery(q);
+    if (!q.trim()) {
+      setSearchResults([]);
+      setSelectedSearchIndex(0);
+      return;
+    }
+    const results = searchIndex.search(q);
+    setSearchResults(results);
+    setSelectedSearchIndex(0);
+  };
+
+  // Keyboard navigation for search input
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSearchIndex((prev) => Math.min(searchResults.length - 1, prev + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSearchIndex((prev) => Math.max(0, prev - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        const target = searchResults[selectedSearchIndex] || searchResults[0];
+        if (target) {
+          selectTopic(target.topicId, target.sectionId);
+          setIsSearchFocused(false);
+          searchInputRef.current?.blur();
+        }
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (searchQuery) {
+        setSearchQuery('');
+        setSearchResults([]);
+      } else {
+        onClose();
+      }
+    }
+  };
+
+  // Switch topic and restore / reset scroll
+  const selectTopic = useCallback(
+    (topicId: string, sectionId?: string) => {
+      // Save current scroll position
+      if (articleScrollRef.current && activeTopic) {
+        topicScrollPositions.current.set(activeTopic.id, articleScrollRef.current.scrollTop);
+      }
+
+      setSelectedTopicId(topicId);
+      setExpandedTopics((prev) => ({ ...prev, [topicId]: true }));
+      setSearchQuery('');
+      setSearchResults([]);
+
+      setTimeout(() => {
+        if (sectionId) {
+          scrollToSection(sectionId);
+        } else if (articleScrollRef.current) {
+          const savedY = topicScrollPositions.current.get(topicId) || 0;
+          articleScrollRef.current.scrollTop = savedY;
+        }
+      }, 50);
+    },
+    [activeTopic]
+  );
+
+  // Smooth scroll to target section anchor
+  const scrollToSection = useCallback((sectionId: string) => {
+    const cleanId = sectionId.replace(/^#/, '');
+    const el = document.getElementById(cleanId);
+    if (el && articleScrollRef.current) {
+      const containerRect = articleScrollRef.current.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const offsetTop = elRect.top - containerRect.top + articleScrollRef.current.scrollTop - 20;
+
+      articleScrollRef.current.scrollTo({
+        top: Math.max(0, offsetTop),
+        behavior: 'smooth',
+      });
+      setActiveSectionId(cleanId);
+    }
+  }, []);
+
+  // Toggle tree topic expansion
+  const toggleTopicExpand = (topicId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedTopics((prev) => ({
+      ...prev,
+      [topicId]: !prev[topicId],
+    }));
+  };
+
+  // Scroll listener to update active section in outline and tree
+  useEffect(() => {
+    const container = articleScrollRef.current;
+    if (!container || !activeTopic) return;
+
+    const handleScroll = () => {
+      const headings = container.querySelectorAll<HTMLElement>('h2[id], h3[id]');
+      const containerTop = container.getBoundingClientRect().top;
+      let currentActive = '';
+
+      for (let i = 0; i < headings.length; i++) {
+        const h = headings[i];
+        if (!h) continue;
+        const rect = h.getBoundingClientRect();
+        if (rect.top - containerTop <= 80) {
+          currentActive = h.id;
+        } else {
+          break;
+        }
+      }
+
+      if (currentActive) {
+        setActiveSectionId(currentActive);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [activeTopic]);
+
+  // Code block copy button click delegation
+  useEffect(() => {
+    const container = articleScrollRef.current;
+    if (!container) return;
+
+    const handleClick = async (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      const copyBtn = target?.closest<HTMLButtonElement>('.doc-copy-code-btn');
+      if (copyBtn) {
+        e.preventDefault();
+        const encoded = copyBtn.getAttribute('data-code');
+        if (encoded) {
+          const text = decodeURIComponent(encoded);
+          await navigator.clipboard.writeText(text);
+          const originalText = copyBtn.innerText;
+          copyBtn.innerText = 'Copied!';
+          copyBtn.style.color = 'var(--success)';
+          setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.style.color = '';
+          }, 1800);
+        }
+      }
+
+      // Internal doc links click handler e.g. href="#doc:profiles"
+      const internalLink = target?.closest<HTMLAnchorElement>('a.doc-internal-link');
+      if (internalLink) {
+        e.preventDefault();
+        const href = internalLink.getAttribute('href') || '';
+        const match = href.match(/^#doc:([^#]+)(?:#(.+))?$/);
+        if (match && match[1]) {
+          selectTopic(match[1], match[2]);
+        }
+      }
+    };
+
+    container.addEventListener('click', handleClick);
+    return () => container.removeEventListener('click', handleClick);
+  }, [selectTopic]);
+
+  // Keyboard shortcut listener (Esc to close)
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
+        if (searchQuery) {
+          setSearchQuery('');
+          setSearchResults([]);
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
-  const copyToClipboard = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCodeId(id);
-    setTimeout(() => {
-      setCopiedCodeId(null);
-    }, 2000);
-  };
-
-  const selectedTopic: DocTopic = DOC_TOPICS.find((t) => t.id === selectedTopicId) || DOC_TOPICS[0]!;
-
-  // Search filtering
-  const q = searchQuery.toLowerCase().trim();
-  const searchResults = q
-    ? DOC_TOPICS.flatMap((topic) =>
-        topic.items
-          .filter(
-            (item) =>
-              item.title.toLowerCase().includes(q) ||
-              item.summary.toLowerCase().includes(q) ||
-              item.steps.some((s) => s.toLowerCase().includes(q))
-          )
-          .map((item) => ({ ...item, topicTitle: topic.title }))
-      )
-    : null;
+  }, [onClose, searchQuery]);
 
   return (
-    <div className={styles.panelView}>
-      <SettingsHeader
-        title="Documentation"
-        subtitle="Terminal Manager Customization Guide"
-        onClose={onClose || (() => {})}
-      />
+    <div className={styles.container}>
+      {/* 1. Header Bar */}
+      <header className={styles.header}>
+        <div className={styles.headerTextGroup}>
+          <h1 className={styles.headerTitle}>Documentation</h1>
+          <p className={styles.headerSubtitle}>
+            {activeTopic ? activeTopic.summary : 'Terminal Manager User Guide and Technical Reference'}
+          </p>
+        </div>
 
-      <div className={styles.layoutBody}>
-        {/* Left Column: Search & Topic List */}
-        <nav className={styles.navColumn} aria-label="Documentation table of contents">
-          <div style={{ padding: '0 4px 8px 4px' }}>
-            <div style={{ position: 'relative' }}>
-              <Search
-                size={13}
-                style={{
-                  position: 'absolute',
-                  left: 10,
-                  top: 10,
-                  color: 'var(--text-muted)',
-                }}
-              />
+        <button
+          type="button"
+          className={styles.closeButton}
+          onClick={onClose}
+          title="Close Documentation (Esc)"
+          aria-label="Close Documentation"
+        >
+          <X size={16} />
+        </button>
+      </header>
+
+      {/* 2. Workspace Body: 3 Columns */}
+      <div className={styles.workspaceLayout}>
+        {/* Left Column: 280px Navigation & Topic Tree */}
+        <aside className={styles.navColumn} aria-label="Documentation Topics">
+          {/* Search Box */}
+          <div className={styles.searchContainer}>
+            <div className={styles.searchBox}>
+              <Search size={14} color="var(--text-muted)" />
               <input
+                ref={searchInputRef}
                 type="text"
-                className={styles.controlInput}
-                style={{
-                  width: '100%',
-                  paddingLeft: 30,
-                  minWidth: 0,
-                  boxSizing: 'border-box',
-                }}
-                placeholder="Search documentation..."
+                className={styles.searchInput}
+                placeholder="Search topics (Enter to open)..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => setIsSearchFocused(true)}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  className={styles.clearSearchBtn}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                  }}
+                  title="Clear search (Esc)"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
-          </div>
 
-          <div className={styles.navGroupTitle}>Topics</div>
-          {DOC_TOPICS.map((topic) => (
-            <button
-              key={topic.id}
-              type="button"
-              className={`${styles.navItem} ${
-                !searchQuery && selectedTopicId === topic.id ? styles.navItemActive : ''
-              }`}
-              onClick={() => {
-                setSelectedTopicId(topic.id);
-                setSearchQuery('');
-              }}
-            >
-              <div className={styles.navItemContent}>
-                <span>{topic.title}</span>
-              </div>
-            </button>
-          ))}
-        </nav>
-
-        {/* Right Column: Content */}
-        <main className={styles.contentColumn}>
-          <div className={styles.contentContainer}>
-            {searchResults ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                <div className={styles.sectionHeader}>
-                  <div>
-                    <h2 className={styles.sectionHeading}>
-                      Search Results for &quot;{searchQuery}&quot;
-                    </h2>
-                    <p className={styles.sectionDescription}>
-                      Found {searchResults.length} matching guide{searchResults.length === 1 ? '' : 's'}.
-                    </p>
-                  </div>
-                </div>
-
-                {searchResults.length === 0 ? (
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    No documentation entries matched your query. Try a different search term.
-                  </p>
-                ) : (
-                  searchResults.map((item) => (
-                    <article
-                      key={item.id}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        paddingBottom: 24,
-                        borderBottom: '1px solid var(--border-subtle)',
+            {/* Live Search Results Dropdown */}
+            {searchQuery && isSearchFocused && (
+              <div className={styles.searchResultsDropdown}>
+                {searchResults.length > 0 ? (
+                  searchResults.map((res, sIdx) => (
+                    <button
+                      key={res.id}
+                      type="button"
+                      className={`${styles.searchResultRow} ${
+                        sIdx === selectedSearchIndex ? styles.searchResultRowSelected : ''
+                      }`}
+                      onClick={() => {
+                        selectTopic(res.topicId, res.sectionId);
+                        setIsSearchFocused(false);
                       }}
                     >
-                      <div>
-                        <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
-                          {item.topicTitle}
-                        </span>
-                        <h3
-                          style={{
-                            margin: '4px 0 0 0',
-                            fontSize: 16,
-                            fontWeight: 600,
-                            color: 'var(--text-primary)',
-                          }}
-                        >
-                          {item.title}
-                        </h3>
+                      <div className={styles.searchResultTopic}>
+                        {res.topicTitle} {res.sectionTitle ? `› ${res.sectionTitle}` : ''}
                       </div>
-                      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                        {item.summary}
-                      </p>
-
-                      <ol
-                        style={{
-                          margin: '4px 0 0 0',
-                          paddingLeft: 20,
-                          fontSize: 13,
-                          color: 'var(--text-secondary)',
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {item.steps.map((step, idx) => (
-                          <li key={idx} style={{ marginBottom: 4 }}>
-                            {step}
-                          </li>
-                        ))}
-                      </ol>
-
-                      {item.codeExample && (
-                        <div style={{ position: 'relative', marginTop: 8 }}>
-                          <pre
-                            style={{
-                              margin: 0,
-                              padding: 12,
-                              background: 'var(--bg-base)',
-                              border: '1px solid var(--border-subtle)',
-                              borderRadius: 6,
-                              fontFamily: 'var(--font-terminal)',
-                              fontSize: 12,
-                              color: 'var(--text-primary)',
-                              overflowX: 'auto',
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {item.codeExample}
-                          </pre>
-                          <button
-                            type="button"
-                            className={styles.btnSecondary}
-                            style={{
-                              position: 'absolute',
-                              top: 8,
-                              right: 8,
-                              height: 26,
-                              padding: '0 8px',
-                              fontSize: 12,
-                            }}
-                            onClick={() => copyToClipboard(item.id, item.codeExample!)}
-                            title="Copy code"
-                          >
-                            {copiedCodeId === item.id ? <Check size={12} /> : <Copy size={12} />}
-                            <span>{copiedCodeId === item.id ? 'Copied' : 'Copy'}</span>
-                          </button>
-                        </div>
-                      )}
-                    </article>
+                      <div
+                        className={styles.searchResultSnippet}
+                        dangerouslySetInnerHTML={{ __html: res.snippet }}
+                      />
+                    </button>
                   ))
+                ) : (
+                  <div className={styles.searchEmptyText}>No matching documents found.</div>
                 )}
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                <div className={styles.sectionHeader}>
-                  <div>
-                    <h2 className={styles.pageTitle} style={{ fontSize: 18 }}>
-                      {selectedTopic.title}
-                    </h2>
-                    <p className={styles.sectionDescription}>{selectedTopic.description}</p>
-                  </div>
-                </div>
-
-                {selectedTopic.items.map((item) => (
-                  <article
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 12,
-                      paddingBottom: 24,
-                      borderBottom: '1px solid var(--border-subtle)',
-                    }}
-                  >
-                    <h3
-                      style={{
-                        margin: 0,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: 'var(--text-primary)',
-                      }}
-                    >
-                      {item.title}
-                    </h3>
-
-                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      {item.summary}
-                    </p>
-
-                    <ol
-                      style={{
-                        margin: '4px 0 0 0',
-                        paddingLeft: 20,
-                        fontSize: 13,
-                        color: 'var(--text-secondary)',
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {item.steps.map((step, idx) => (
-                        <li key={idx} style={{ marginBottom: 4 }}>
-                          {step}
-                        </li>
-                      ))}
-                    </ol>
-
-                    {item.codeExample && (
-                      <div style={{ position: 'relative', marginTop: 8 }}>
-                        <pre
-                          style={{
-                            margin: 0,
-                            padding: 12,
-                            background: 'var(--bg-base)',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: 6,
-                            fontFamily: 'var(--font-terminal)',
-                            fontSize: 12,
-                            color: 'var(--text-primary)',
-                            overflowX: 'auto',
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {item.codeExample}
-                        </pre>
-                        <button
-                          type="button"
-                          className={styles.btnSecondary}
-                          style={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            height: 26,
-                            padding: '0 8px',
-                            fontSize: 12,
-                          }}
-                          onClick={() => copyToClipboard(item.id, item.codeExample!)}
-                          title="Copy code"
-                        >
-                          {copiedCodeId === item.id ? <Check size={12} /> : <Copy size={12} />}
-                          <span>{copiedCodeId === item.id ? 'Copied' : 'Copy'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </article>
-                ))}
               </div>
             )}
           </div>
+
+          {/* Topic Tree */}
+          <nav className={styles.topicTreeList}>
+            {topics.map((t) => {
+              const isSelected = t.id === selectedTopicId;
+              const isExpanded = Boolean(expandedTopics[t.id]);
+              const h2Sections = t.sections.filter((s) => s.level === 2);
+
+              return (
+                <div key={t.id} className={styles.topicItem}>
+                  <button
+                    type="button"
+                    className={`${styles.topicRow} ${isSelected ? styles.topicRowActive : ''}`}
+                    onClick={() => selectTopic(t.id)}
+                    title={t.title}
+                  >
+                    <div className={styles.topicRowLeft}>
+                      {h2Sections.length > 0 && (
+                        <span
+                          onClick={(e) => toggleTopicExpand(t.id, e)}
+                          style={{ display: 'inline-flex', cursor: 'pointer', color: 'var(--text-muted)' }}
+                        >
+                          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </span>
+                      )}
+                      <span className={styles.topicRowTitle}>{t.title}</span>
+                    </div>
+                  </button>
+
+                  {/* Expandable Section Tree */}
+                  {isExpanded && h2Sections.length > 0 && (
+                    <div className={styles.topicSectionList}>
+                      {h2Sections.map((sec) => {
+                        const isSectionActive = isSelected && activeSectionId === sec.id;
+                        return (
+                          <button
+                            key={sec.id}
+                            type="button"
+                            className={`${styles.topicSectionRow} ${
+                              isSectionActive ? styles.topicSectionRowActive : ''
+                            }`}
+                            onClick={() => {
+                              if (!isSelected) selectTopic(t.id, sec.id);
+                              else scrollToSection(sec.id);
+                            }}
+                            title={sec.title}
+                          >
+                            {sec.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Center Column: Article Container (Max Width 820px) */}
+        <main
+          ref={articleScrollRef}
+          className={styles.articleScrollContainer}
+          tabIndex={0}
+          aria-label="Documentation Article Content"
+        >
+          {activeTopic ? (
+            <article className={styles.articleWrapper}>
+              {/* Meta Bar */}
+              <div className={styles.articleMetaBar}>
+                <span className={styles.articleMetaItem}>
+                  Since: v{activeTopic.since}
+                </span>
+                <span>•</span>
+                <span className={styles.articleMetaItem}>
+                  Updated: {activeTopic.updated}
+                </span>
+              </div>
+
+              {/* Parsed Article HTML Body */}
+              <div
+                className={styles.articleBody}
+                dangerouslySetInnerHTML={{ __html: activeTopic.htmlContent }}
+              />
+
+              {/* Prev / Next Navigation Footer */}
+              <div className={styles.bottomNav}>
+                {prevTopic ? (
+                  <button
+                    type="button"
+                    className={styles.navPrevBtn}
+                    onClick={() => selectTopic(prevTopic.id)}
+                  >
+                    <span className={styles.navLabel}>Previous Topic</span>
+                    <span className={styles.navTitle}>← {prevTopic.title}</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+
+                {nextTopic && (
+                  <button
+                    type="button"
+                    className={styles.navNextBtn}
+                    onClick={() => selectTopic(nextTopic.id)}
+                  >
+                    <span className={styles.navLabel}>Next Topic</span>
+                    <span className={styles.navTitle}>{nextTopic.title} →</span>
+                  </button>
+                )}
+              </div>
+            </article>
+          ) : (
+            <div className={styles.articleWrapper}>
+              <p>No documentation topic selected.</p>
+            </div>
+          )}
         </main>
+
+        {/* Right Column: "On this page" Outline (h2 and h3) */}
+        {activeTopic && activeTopic.sections.length > 0 && (
+          <aside className={styles.outlineColumn} aria-label="On this page outline">
+            <div className={styles.outlineTitle}>On This Page</div>
+            <div className={styles.outlineList}>
+              {activeTopic.sections.map((sec) => {
+                const isActive = activeSectionId === sec.id;
+                const isH3 = sec.level === 3;
+                return (
+                  <a
+                    key={sec.id}
+                    href={sec.anchor}
+                    className={`${styles.outlineLink} ${isH3 ? styles.outlineLinkH3 : ''} ${
+                      isActive ? styles.outlineLinkActive : ''
+                    }`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(sec.id);
+                    }}
+                    title={sec.title}
+                  >
+                    {sec.title}
+                  </a>
+                );
+              })}
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );

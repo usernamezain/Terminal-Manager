@@ -1,0 +1,21 @@
+title: "[Question]: "
+labels: ["question", "support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask a question or seek advice on configuring Terminal Manager, shells, or themes.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What are you trying to accomplish or configure?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context & Attempts
+      description: What have you tried so far?
+    validations:
+      required: false

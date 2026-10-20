@@ -40,11 +40,16 @@
 }
 
 .activeDot {
-  background-color: var(--success);
+  background-color: var(--success, #10b981);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .inactiveDot {
-  background-color: var(--danger);
+  background-color: var(--danger, #ef4444);
+}
+
+.readyDot {
+  background-color: var(--accent, #00bcd4);
 }
 
 .warningItem {
@@ -57,6 +62,91 @@
   padding: 1px 6px;
   border-radius: var(--radius-sm, 4px);
   font-weight: 500;
+}
+
+/* Log Detector Trigger Button in Status Bar */
+.logTrigger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--text-secondary, #cbd5e1);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 14px;
+}
+
+.logTrigger:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--accent, #00bcd4);
+  color: var(--text-primary, #fff);
+}
+
+.logTriggerActive {
+  background: rgba(0, 188, 212, 0.18) !important;
+  border-color: var(--accent, #00bcd4) !important;
+  color: var(--accent, #00bcd4) !important;
+}
+
+.livePulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: livePulseAnim 1.6s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+.pulseError {
+  background-color: #ef4444 !important;
+  box-shadow: 0 0 6px #ef4444 !important;
+}
+
+.pulseWarn {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 6px #f59e0b !important;
+}
+
+@keyframes livePulseAnim {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}
+
+.logLabel {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.logCountBadge {
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #94a3b8);
+  font-family: var(--font-mono, monospace);
+}
+
+.logErrorBadge {
+  font-size: 9.5px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
 }
 
 /* Responsive priority hiding at narrow widths */

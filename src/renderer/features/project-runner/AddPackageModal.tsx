@@ -207,6 +207,15 @@ export const AddPackageModal: React.FC<AddPackageModalProps> = ({ onToast }) => 
           </label>
         )}
 
+        <label className={styles.checkboxRow}>
+          <input
+            type="checkbox"
+            checked={allowAdvanced}
+            onChange={(e) => setAllowAdvanced(e.target.checked)}
+          />
+          <span>Advanced mode (allow explicit versions, git URLs, or paths)</span>
+        </label>
+
         {/* Quick Picks / Suggestions */}
         <div className={styles.fieldGroup}>
           <div className={styles.label}>

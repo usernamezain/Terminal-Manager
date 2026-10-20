@@ -1,6 +1,8 @@
 # AGENT.md - Terminal Manager Context & Guidelines
 
-Welcome to **Terminal Manager**! This document provides complete architectural context, technology stack details, data flows, codebase organization, and engineering rules for AI agents and human developers working on this project.
+Welcome to **Terminal Manager**! This document provides engineering rules and coding constraints for AI agents working on this project.
+
+> **System Architecture Map:** For the comprehensive file-level module map, IPC contracts, data persistence rules, and step-by-step extension guides, consult **[CONTEXT.md](CONTEXT.md)**.
 
 ---
 

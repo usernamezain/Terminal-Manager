@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useWorkspaceStore } from '@renderer/store/useWorkspaceStore';
+import { useWorkspaceStore } from '@renderer/features/layout/useWorkspaceStore';
+import { getAllPanes } from '@renderer/features/layout/treeUtils';
+import { useLogStore } from '@renderer/store/useLogStore';
 import { AlertTriangle } from 'lucide-react';
 import styles from './StatusBar.module.css';
 
@@ -10,9 +12,15 @@ interface ShellMemoryInfo {
 }
 
 export const StatusBar: React.FC = () => {
-  const { panes, activePaneId } = useWorkspaceStore();
-  const activePane = panes[activePaneId];
-  const terminalCount = Object.keys(panes).length;
+  const { tabs, activeTabId } = useWorkspaceStore();
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activePanes = activeTab ? getAllPanes(activeTab.root) : [];
+  const activePane = activePanes.find((p) => p.id === activeTab?.focusedPaneId) || activePanes[0];
+  const terminalCount = tabs.reduce((acc, t) => acc + getAllPanes(t.root).length, 0);
+
+  const { isOpen: isLogOpen, toggleOpen: toggleLogOpen, logs } = useLogStore();
+  const errorCount = logs.filter((l) => l.level === 'error').length;
+  const warnCount = logs.filter((l) => l.level === 'warn').length;
 
   const [shellMemory, setShellMemory] = useState<ShellMemoryInfo | null>(null);
 
@@ -55,44 +63,78 @@ export const StatusBar: React.FC = () => {
       }
     };
 
+    const unsubVisibility = window.api?.app?.onVisibility?.((visible) => {
+      if (!visible) {
+        stopPolling();
+      } else {
+        fetchMemory();
+        startPolling();
+      }
+    });
+
     startPolling();
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      unsubVisibility?.();
     };
   }, []);
 
-  const statusText =
-    activePane?.status === 'running'
-      ? 'Connected'
-      : activePane?.status === 'spawning'
-      ? 'Spawning...'
-      : activePane?.status === 'error'
-      ? 'Error'
-      : 'Disconnected';
+  const isConnected = Boolean(activePane?.sessionId && !activePane?.exited);
+  const isExited = Boolean(activePane?.exited);
+  const statusText = isExited
+    ? `Exited (${activePane?.exited?.code})`
+    : isConnected
+    ? 'Connected'
+    : 'Ready';
 
-  const isConnected = activePane?.status === 'running';
   const showWarning = terminalCount >= 30;
 
   return (
     <footer className={styles.statusbar}>
       <div className={styles.leftSection}>
-        <div className={styles.item}>
+        <div className={styles.item} title={`Active Terminal: ${activePane?.title || 'Shell'} (${statusText})`}>
           <div
             className={`${styles.dot} ${
-              isConnected ? styles.activeDot : styles.inactiveDot
+              isConnected
+                ? styles.activeDot
+                : isExited
+                ? styles.inactiveDot
+                : styles.readyDot
             }`}
           />
           <span>{statusText}</span>
         </div>
-        {activePane?.ptyId && (
-          <div className={styles.item}>
-            <span>ID:</span>
-            <span className="tabular-nums">{activePane.ptyId}</span>
+
+        {activePane?.sessionId && (
+          <div className={styles.item} title="Active Session ID">
+            <span>Session:</span>
+            <span className="tabular-nums font-mono">{activePane.sessionId}</span>
           </div>
         )}
+
+        {/* Realtime Log Detector Trigger Button */}
+        <button
+          type="button"
+          className={`${styles.logTrigger} ${isLogOpen ? styles.logTriggerActive : ''}`}
+          onClick={toggleLogOpen}
+          title="Toggle Realtime Log Detector (Click or press Ctrl+Shift+L)"
+        >
+          <span
+            className={`${styles.livePulse} ${
+              errorCount > 0 ? styles.pulseError : warnCount > 0 ? styles.pulseWarn : ''
+            }`}
+          />
+          <span className={styles.logLabel}>Logs</span>
+          <span className={styles.logCountBadge}>{logs.length}</span>
+          {errorCount > 0 && (
+            <span className={styles.logErrorBadge} title={`${errorCount} error(s) logged`}>
+              {errorCount}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className={styles.rightSection}>
@@ -128,4 +170,3 @@ export const StatusBar: React.FC = () => {
     </footer>
   );
 };
-

@@ -1,0 +1,28 @@
+{
+  "budgets": {
+    "firstWindowShownMs": 800,
+    "firstPromptFastStartOnMs": 1100,
+    "firstPromptFastStartOffMs": 1800,
+    "openSettingsMs": 250,
+    "openProfilesMs": 200,
+    "openScriptRunnerMs": 250,
+    "openAgentsMs": 250,
+    "openDocsMs": 300,
+    "idleCpuPercent": 1.0,
+    "idleMemoryMb": 220,
+    "memory1TerminalMb": 220,
+    "memory5TerminalsMb": 320,
+    "memory10TerminalsMb": 450,
+    "panelsRepetitionDeltaMb": 15.0,
+    "ptyThroughputDurationMs": 5000,
+    "ctrlCResponseMs": 200,
+    "keystrokeToEchoMs": 150,
+    "search100kLinesMs": 100,
+    "trayModeIdleCpuPercent": 0.5,
+    "trayModeMemoryMb": 150,
+    "installerSizeMb": 100,
+    "unpackedSizeMb": 300,
+    "appAsarSizeMb": 90
+  },
+  "maxAllowedToleranceRatio": 0.10
+}

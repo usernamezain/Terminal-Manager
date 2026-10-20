@@ -25,6 +25,8 @@ import {
   Palette,
   Compass,
   Check,
+  Bot,
+  HelpCircle,
 } from 'lucide-react';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
 import { useProfilesStore } from '@renderer/store/useProfilesStore';
@@ -34,6 +36,9 @@ import { useClipboardHistoryStore } from './clipboardHistoryStore';
 import { useShellIntegrationStore } from './shellIntegrationStore';
 import { useSnippetsStore } from './useSnippetsStore';
 import { useScriptsStore } from '@renderer/features/scripts/useScriptsStore';
+import { useProjectRunnerStore } from '@renderer/features/project-runner/useProjectRunnerStore';
+import { useAgentsStore } from '@renderer/features/ai-agents/useAgentsStore';
+import { AgentLaunchMode } from '@shared/agentTypes';
 import {
   detectPath,
   detectUrl,
@@ -56,7 +61,7 @@ export interface MenuItemDef {
   hidden?: boolean;
   isDivider?: boolean;
   checked?: boolean;
-  action?: () => void;
+  action?: (e?: React.MouseEvent) => void;
   submenu?: MenuItemDef[];
 }
 
@@ -89,7 +94,7 @@ interface SubmenuPortalProps {
   onLeavePanel: () => void;
   onEnterPanel: () => void;
   focusedIndex: number;
-  onTriggerItem: (item: MenuItemDef) => void;
+  onTriggerItem: (item: MenuItemDef, e?: React.MouseEvent) => void;
   onRegisterItemRef: (id: string, el: HTMLElement | null) => void;
   onPanelScroll?: () => void;
   renderChildPortal?: React.ReactNode;
@@ -213,7 +218,7 @@ const SubmenuPortal: React.FC<SubmenuPortalProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 if (item.disabled) return;
-                onTriggerItem(item);
+                onTriggerItem(item, e);
               }}
               onMouseEnter={() => onHoverItem(item, level)}
             >
@@ -267,6 +272,17 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
   const recordCommand = useShellIntegrationStore((state) => state.recordCommand);
   const { snippets } = useSnippetsStore();
   const { scripts } = useScriptsStore();
+  const project = useProjectRunnerStore((state) => state.projects[sessionId]);
+  const runProjectCommand = useProjectRunnerStore((state) => state.runCommand);
+  const openAddPackage = useProjectRunnerStore((state) => state.openAddPackage);
+  const agents = useAgentsStore((state) => state.agents);
+  const loadAgents = useAgentsStore((state) => state.loadAgents);
+
+  useEffect(() => {
+    if (agents.length === 0) {
+      loadAgents();
+    }
+  }, [agents.length, loadAgents]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -848,6 +864,221 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
       );
     }
 
+    // Project Runner Group (Appears when project is detected in this terminal's folder)
+    const projectGroup: MenuItemDef[] = [];
+    if (project && project.ecosystems.length > 0 && vis['group-project'] !== false) {
+      const projectSubmenu: MenuItemDef[] = [];
+
+      // Header row showing project name and detected tool
+      projectSubmenu.push({
+        id: 'proj-header',
+        label: `${project.name} (${project.ecosystems[0]?.tool || 'project'})`,
+        disabled: true,
+      });
+      projectSubmenu.push({ id: 'proj-div-head', label: '', isDivider: true });
+
+      // Primary command if detected
+      if (project.primaryCommand) {
+        const pCmd = project.primaryCommand;
+        projectSubmenu.push({
+          id: `proj-primary-${pCmd.id}`,
+          label: `Run ${pCmd.label}`,
+          icon: Play,
+          action: () => {
+            runProjectCommand(sessionId, pCmd, 'terminal', project.cwd || currentCwd);
+            onClose();
+            terminal.focus();
+          },
+        });
+        projectSubmenu.push({ id: 'proj-div-prim', label: '', isDivider: true });
+      }
+
+      // Ecosystems and command groups
+      for (const eco of project.ecosystems) {
+        if (!eco.toolAvailable) {
+          projectSubmenu.push({
+            id: `proj-${eco.type}-missing`,
+            label: `${eco.tool} not found`,
+            disabled: true,
+          });
+        }
+
+        for (const grp of eco.groups) {
+          const commandsSubmenu: MenuItemDef[] = grp.commands.map((cmd) => {
+            if (cmd.category === 'package' && (cmd.id.includes('add-package') || cmd.id.includes('add-dev-package'))) {
+              const isDev = cmd.id.includes('dev');
+              return {
+                id: `proj-cmd-${cmd.id}`,
+                label: cmd.label,
+                action: () => {
+                  openAddPackage(sessionId, project.rootPath, eco.type, isDev);
+                  onClose();
+                  terminal.focus();
+                },
+              };
+            }
+            return {
+              id: `proj-cmd-${cmd.id}`,
+              label: cmd.label,
+              disabled: cmd.disabled,
+              action: () => {
+                runProjectCommand(sessionId, cmd, 'terminal', project.cwd || currentCwd);
+                onClose();
+                terminal.focus();
+              },
+            };
+          });
+
+          if (grp.subgroups) {
+            for (const sub of grp.subgroups) {
+              commandsSubmenu.push({
+                id: `proj-subgrp-${sub.id}`,
+                label: sub.title,
+                submenu: sub.commands.map((subCmd) => ({
+                  id: `proj-cmd-${subCmd.id}`,
+                  label: subCmd.label,
+                  disabled: subCmd.disabled,
+                  action: () => {
+                    runProjectCommand(sessionId, subCmd, 'terminal', project.cwd || currentCwd);
+                    onClose();
+                    terminal.focus();
+                  },
+                })),
+              });
+            }
+          }
+
+          projectSubmenu.push({
+            id: `proj-grp-${eco.type}-${grp.id}`,
+            label: grp.title,
+            submenu: commandsSubmenu,
+          });
+        }
+      }
+
+      // Workspaces if monorepo
+      if (project.workspaces && project.workspaces.length > 0) {
+        projectSubmenu.push({
+          id: 'proj-workspaces',
+          label: 'Workspaces',
+          submenu: project.workspaces.map((ws) => ({
+            id: `proj-ws-${ws.name}`,
+            label: ws.name,
+            submenu: ws.scripts.map((s) => ({
+              id: `proj-ws-cmd-${s.id}`,
+              label: s.label,
+              action: () => {
+                runProjectCommand(sessionId, s, 'terminal', ws.path);
+                onClose();
+                terminal.focus();
+              },
+            })),
+          })),
+        });
+      }
+
+      projectGroup.push({
+        id: 'project-menu',
+        label: 'Project',
+        icon: Play,
+        submenu: projectSubmenu,
+      });
+    }
+
+    // AI Agents Group
+    const aiAgentsGroup: MenuItemDef[] = [];
+    if (vis['group-ai-agents'] !== false) {
+      const installedAgents = agents.filter((a) => a.state.status === 'installed');
+      const aiAgentsSubmenu: MenuItemDef[] = [];
+
+      if (installedAgents.length > 0) {
+        for (const ag of installedAgents) {
+          aiAgentsSubmenu.push({
+            id: `ai-agent-${ag.entry.id}`,
+            label: ag.entry.name,
+            icon: Bot,
+            action: (e?: React.MouseEvent) => {
+              let launchMode: AgentLaunchMode = settings.aiAgents?.defaultLaunchMode || 'terminal';
+              if (e?.ctrlKey || e?.metaKey) {
+                launchMode = 'window';
+              } else if (e?.shiftKey) {
+                launchMode = 'tab';
+              }
+              window.api?.aiAgents?.launch({
+                agentId: ag.entry.id,
+                cwd: currentCwd,
+                mode: launchMode,
+                sessionId,
+              });
+              onClose();
+              terminal.focus();
+            },
+          });
+        }
+
+        aiAgentsSubmenu.push({ id: 'div-ai-actions', label: '', isDivider: true });
+
+        aiAgentsSubmenu.push({
+          id: 'ai-launch-in-folder',
+          label: 'Launch in folder...',
+          icon: Folder,
+          submenu: installedAgents.map((ag) => ({
+            id: `ai-folder-${ag.entry.id}`,
+            label: ag.entry.name,
+            action: async () => {
+              const selected = await window.api?.system?.openFolderPicker?.();
+              if (selected) {
+                window.api?.aiAgents?.launch({
+                  agentId: ag.entry.id,
+                  cwd: selected,
+                  mode: 'tab',
+                });
+              }
+              onClose();
+              terminal.focus();
+            },
+          })),
+        });
+
+        aiAgentsSubmenu.push({
+          id: 'ai-install-more',
+          label: 'Install more agents...',
+          action: () => {
+            useUIWorkspaceStore.getState().setActiveNavTab('agents');
+            onClose();
+            terminal.focus();
+          },
+        });
+
+        aiAgentsSubmenu.push({
+          id: 'ai-manage-agents',
+          label: 'Manage agents...',
+          action: () => {
+            useUIWorkspaceStore.getState().setActiveNavTab('agents');
+            onClose();
+            terminal.focus();
+          },
+        });
+      } else {
+        aiAgentsSubmenu.push({
+          id: 'ai-install-first',
+          label: 'Install an AI agent...',
+          action: () => {
+            useUIWorkspaceStore.getState().setActiveNavTab('agents');
+            onClose();
+            terminal.focus();
+          },
+        });
+      }
+
+      aiAgentsGroup.push({
+        id: 'ai-agents-top',
+        label: 'AI Agents',
+        icon: Bot,
+        submenu: aiAgentsSubmenu,
+      });
+    }
+
     // 3. Quick Commands: Terminal & Directory Groups
     const quickGroup: MenuItemDef[] = [];
     if (vis['group-quick'] !== false) {
@@ -1411,6 +1642,17 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
             onClose();
             terminal.focus();
           },
+        },
+        {
+          id: 'term-help-docs',
+          label: 'Documentation & Help...',
+          shortcut: 'F1',
+          icon: HelpCircle,
+          action: () => {
+            useUIWorkspaceStore.getState().openDocs('getting-started');
+            onClose();
+            terminal.focus();
+          },
         }
       );
     }
@@ -1418,6 +1660,8 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
     const groups: MenuItemDef[][] = [];
     if (selectionItems.length > 0) groups.push(selectionItems);
     if (clipboardGroup.length > 0) groups.push(clipboardGroup);
+    if (projectGroup.length > 0) groups.push(projectGroup);
+    if (aiAgentsGroup.length > 0) groups.push(aiAgentsGroup);
     if (quickGroup.length > 0) groups.push(quickGroup);
     if (savedGroup.length > 0) groups.push(savedGroup);
     if (windowGroup.length > 0) groups.push(windowGroup);
@@ -1426,6 +1670,7 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
     return groups;
   }, [
     activeTabId,
+    agents,
     addItemToClipboard,
     clipboardHistory,
     closePane,
@@ -1449,11 +1694,14 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
     onPasteWithConfirm,
     onToggleBroadcast,
     onToggleReadOnly,
+    openAddPackage,
     paneId,
     pathMatch,
     profiles,
+    project,
     renameTab,
     runCommandSafely,
+    runProjectCommand,
     scripts,
     selection,
     sessionMarkers,
@@ -1533,13 +1781,13 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
 
   // Trigger item action or toggle submenu
   const handleTriggerItem = useCallback(
-    (item: MenuItemDef) => {
+    (item: MenuItemDef, e?: React.MouseEvent) => {
       if (item.disabled) return;
       if (item.submenu && item.submenu.length > 0) {
         // Toggle or open submenu immediately
         setActivePath((prev) => [...prev, item.id]);
       } else if (item.action) {
-        item.action();
+        item.action(e);
       }
     },
     []
@@ -1717,7 +1965,7 @@ export const TerminalContextMenu: React.FC<TerminalContextMenuProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 if (item.disabled) return;
-                handleTriggerItem(item);
+                handleTriggerItem(item, e);
               }}
               onMouseEnter={() => handleItemHover(item, 0)}
             >

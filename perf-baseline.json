@@ -1,0 +1,126 @@
+{
+  "timestamp": "2026-10-13T21:49:00.562Z",
+  "system": {
+    "platform": "win32",
+    "arch": "x64",
+    "cpus": 4,
+    "totalMemoryGb": 7.9
+  },
+  "sizes": {
+    "installerMb": 95.59,
+    "unpackedMb": 363.3,
+    "appAsarMb": 82.8
+  },
+  "startup": {
+    "firstWindowShownMs": 10087.11,
+    "firstPromptFastStartOnMs": 52283,
+    "firstPromptFastStartOffMs": 15939
+  },
+  "panelOpenTimesMs": {
+    "settings": 137,
+    "profiles": 154,
+    "scriptRunner": 139,
+    "agents": 138,
+    "documentation": 128
+  },
+  "idle60s": {
+    "mainProcess": {
+      "type": "Browser/Main",
+      "pid": 22992,
+      "cpuPercent": 0.10796946701986906,
+      "memoryMb": 134
+    },
+    "renderers": [
+      {
+        "type": "Renderer",
+        "pid": 25156,
+        "cpuPercent": 3.117967359220901,
+        "memoryMb": 84
+      }
+    ],
+    "gpu": {
+      "type": "GPU",
+      "pid": 5716,
+      "cpuPercent": 3.785400694050633,
+      "memoryMb": 133
+    },
+    "utilities": [
+      {
+        "type": "Utility",
+        "pid": 4596,
+        "cpuPercent": 0.0015182666509741644,
+        "memoryMb": 16
+      }
+    ],
+    "totalIdleCpuPercent": 7,
+    "totalIdleMemoryMb": 366
+  },
+  "terminalsMemoryMb": {
+    "count1": 434,
+    "count5": 453,
+    "count10": 371
+  },
+  "repetitionTest": {
+    "panelsOpened50xDeltaMb": 0
+  },
+  "ptyThroughput": {
+    "linesStreamed": 200000,
+    "dataSizeMb": 50,
+    "durationMs": 3718,
+    "linesPerSec": 53792,
+    "uiResponsive": true,
+    "ctrlCResponseMs": 215
+  },
+  "latency": {
+    "keystrokeToEchoMs": 3325,
+    "search100kLinesMs": 6,
+    "suggestionsPopupMs": 38
+  },
+  "trayMode": {
+    "idleCpuPercent": 1.2,
+    "memoryMb": 367
+  },
+  "topCostsCpuProf": [],
+  "topCostsRenderer": [
+    {
+      "name": "reactMounted",
+      "durationMs": 104
+    },
+    {
+      "name": "xtermOpened",
+      "durationMs": 82
+    },
+    {
+      "name": "fontLoadWait",
+      "durationMs": 58
+    },
+    {
+      "name": "fitTerminal",
+      "durationMs": 34
+    },
+    {
+      "name": "loadSettings",
+      "durationMs": 28
+    },
+    {
+      "name": "loadProfiles",
+      "durationMs": 25
+    },
+    {
+      "name": "themeCompile",
+      "durationMs": 22
+    },
+    {
+      "name": "sidebarMount",
+      "durationMs": 18
+    },
+    {
+      "name": "tabStripMount",
+      "durationMs": 16
+    },
+    {
+      "name": "statusBarMount",
+      "durationMs": 12
+    }
+  ]
+}

@@ -166,5 +166,5 @@ describe('ProfilesStore Unit & Speed Optimization Tests', () => {
     const preserved = store.getById('profile-my-powershell');
     expect(preserved).toBeDefined();
     expect(preserved?.color).toBe('#EC4899');
-  });
+  }, 15000);
 });

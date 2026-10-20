@@ -5,6 +5,7 @@ import { useWorkspaceStore as useUIWorkspaceStore } from '../../store/useWorkspa
 import { terminalRegistry } from '../terminal/registry/TerminalRegistry';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
 import { useClipboardHistoryStore } from '../terminal-actions/clipboardHistoryStore';
+import { useShellIntegrationStore } from '../terminal-actions/shellIntegrationStore';
 import { TerminalContextMenu } from '../terminal-actions/TerminalContextMenu';
 import { ActionsPanel } from '../terminal-actions/ActionsPanel';
 import { MultiLinePasteDialog } from '../terminal-actions/MultiLinePasteDialog';
@@ -41,6 +42,7 @@ export const PaneContainer: React.FC<PaneContainerProps> = ({ pane, isFocused, i
   const [isActionsPanelOpen, setIsActionsPanelOpen] = useState(false);
   const [actionsPanelSection, setActionsPanelSection] = useState<string | undefined>(undefined);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const sessionMarkers = useShellIntegrationStore((state) => state.sessions[pane.sessionId || pane.id]);
 
   // Dialog states
   const [pendingPasteText, setPendingPasteText] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export const PaneContainer: React.FC<PaneContainerProps> = ({ pane, isFocused, i
     const setupPane = async () => {
       let ptyId = pane.sessionId;
 
-      if (!ptyId || ptyId.startsWith('pty-1') || ptyId === 'pty-fresh') {
+      if (!ptyId || ptyId === 'pty-fresh') {
         const width = slotRef.current?.clientWidth || 800;
         const height = slotRef.current?.clientHeight || 450;
         const cols = Math.max(20, Math.floor(width / 9));
@@ -76,6 +78,11 @@ export const PaneContainer: React.FC<PaneContainerProps> = ({ pane, isFocused, i
           terminalRegistry.focus(pane.id);
         }
       }
+
+      // If attaching an existing session (such as when docked), request session attach so scrollback is replayed
+      if (window.api?.session?.attach && ptyId && ptyId !== 'pty-fresh') {
+        window.api.session.attach(ptyId).catch(() => {});
+      }
     };
 
     setupPane();
@@ -96,11 +103,19 @@ export const PaneContainer: React.FC<PaneContainerProps> = ({ pane, isFocused, i
     return () => window.removeEventListener('focus', handleWindowFocus);
   }, [isFocused, pane.id]);
 
-  // Read-only keyboard interceptor
+  // Read-only keyboard interceptor & Project Runner hotkey forwarder
   useEffect(() => {
     const entry = terminalRegistry.get(pane.id);
     if (!entry) return;
-    entry.terminal.attachCustomKeyEventHandler(() => {
+    entry.terminal.attachCustomKeyEventHandler((e) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'r') {
+        if (e.type === 'keydown') {
+          window.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'r', ctrlKey: true, altKey: true, bubbles: true })
+          );
+        }
+        return false;
+      }
       if (isReadOnly) return false;
       return true;
     });
@@ -258,9 +273,9 @@ export const PaneContainer: React.FC<PaneContainerProps> = ({ pane, isFocused, i
 
       <ProjectRunnerBar
         sessionId={entry?.ptyId || pane.sessionId || pane.id}
-        cwd={entry?.cwd || pane.cwd}
+        cwd={sessionMarkers?.currentCwd || pane.cwd}
         onRefitTerminal={() => {
-          if (entry) entry.fit();
+          terminalRegistry.scheduleFit(pane.id, true);
         }}
         onRunInNewTab={(tabCwd) => {
           useWorkspaceStore.getState().newTab(undefined, undefined, undefined, tabCwd);

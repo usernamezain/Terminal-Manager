@@ -1,0 +1,82 @@
+name: 🐛 Bug Report
+description: File a bug report to help us improve Terminal Manager
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please provide as much detail as possible to help us reproduce and fix it.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I split a pane vertically and resize the window...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: What steps need to be taken to reproduce the behavior?
+      placeholder: |
+        1. Open Terminal Manager
+        2. Press 'Ctrl+Shift+D' to split pane
+        3. Run command '...'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: A clear description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted In-App Diagnostics Report
+      description: In Terminal Manager, go to Settings (Ctrl+,) > Help & Support and click "Copy Diagnostics". Paste the output here.
+      placeholder: |
+        ========================================================================
+        TERMINAL MANAGER DIAGNOSTICS REPORT
+        ...
+        ========================================================================
+      render: text
+    validations:
+      required: false
+  - type: dropdown
+    id: os_version
+    attributes:
+      label: Windows OS Version
+      options:
+        - Windows 11 (23H2 or newer)
+        - Windows 11 (22H2 / 21H2)
+        - Windows 10 (Build 19041+)
+        - Other (specify in details)
+    validations:
+      required: true
+  - type: dropdown
+    id: shell_used
+    attributes:
+      label: Active Shell Profile
+      options:
+        - PowerShell 7 (pwsh.exe)
+        - Windows PowerShell (powershell.exe)
+        - Command Prompt (cmd.exe)
+        - WSL (Ubuntu / Debian / other)
+        - Git Bash (bash.exe)
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and verified this is not a duplicate.
+          required: true
+        - label: I have tested with the latest available release of Terminal Manager.
+          required: true

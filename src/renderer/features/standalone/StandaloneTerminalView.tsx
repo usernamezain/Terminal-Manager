@@ -9,6 +9,8 @@ import {
   Minus,
   Square,
   X,
+  AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import { XTERM_THEMES } from '../../../shared/constants';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
@@ -24,7 +26,6 @@ import { Snippet } from '@shared/snippetTypes';
 import { ProjectRunnerBar } from '../project-runner/ProjectRunnerBar';
 import styles from './StandaloneTerminalView.module.css';
 
-
 interface StandaloneTerminalViewProps {
   sessionId: string;
 }
@@ -34,11 +35,20 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
 
-  const { settings, updateSettings } = useSettingsStore();
+  const { settings } = useSettingsStore();
 
   const [sessionTitle, setSessionTitle] = useState('Terminal');
   const [sessionCwd, setSessionCwd] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Handshake connection state
+  const [handshakeState, setHandshakeState] = useState<'pending' | 'connected' | 'error'>('pending');
+  const [handshakeError, setHandshakeError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+
+  // Live CWD from shell integration OSC 7
+  const liveMarkerCwd = useShellIntegrationStore((state) => state.sessions[sessionId]?.currentCwd);
+  const effectiveCwd = liveMarkerCwd || sessionCwd;
 
   // Context menu and Actions Panel state
   const [contextMenuPos, setContextMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -61,113 +71,174 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
     };
   }, []);
 
+  // Handshake and Terminal Initialization
   useEffect(() => {
-    // Fetch session details from session manager
-    if (window.api?.session) {
-      window.api.session.list().then((list) => {
-        const found = list.find((s) => s.id === sessionId);
-        if (found) {
-          if (found.title) setSessionTitle(found.title);
-          if (found.cwd) setSessionCwd(found.cwd);
-        }
-      });
-    }
-  }, [sessionId]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const term = new Terminal({
-      cursorBlink: true,
-      cursorStyle: 'block',
-      fontFamily: "'CaskaydiaCove Nerd Font Mono', 'Cascadia Code', Consolas, monospace",
-      fontSize: 14,
-      lineHeight: 1.2,
-      theme: XTERM_THEMES[settings.theme] || XTERM_THEMES.midnight,
-      allowTransparency: true,
-      allowProposedApi: true,
-    });
-
-    const fitAddon = new FitAddon();
-    term.loadAddon(fitAddon);
-    term.loadAddon(new WebLinksAddon());
-
-    term.open(containerRef.current);
-    terminalRef.current = term;
-    fitAddonRef.current = fitAddon;
-
-    // Shell Integration OSC handlers
-    if (settings.shellIntegration ?? true) {
-      term.parser.registerOscHandler(133, (data: string) => {
-        const currentY = term.buffer.active.cursorY + term.buffer.active.baseY;
-        useShellIntegrationStore.getState().handleOsc133(sessionId, data, currentY);
-        return true;
-      });
-
-      term.parser.registerOscHandler(7, (data: string) => {
-        useShellIntegrationStore.getState().handleOsc7(sessionId, data);
-        return true;
-      });
-    }
-
-    // Fit initial size
-    setTimeout(() => {
-      try {
-        fitAddon.fit();
-        if (window.api?.pty) {
-          window.api.pty.resize(sessionId, term.cols, term.rows);
-        }
-      } catch (e) {}
-    }, 50);
-
-    // Terminal user input
-    const onDataSub = term.onData((data) => {
-      if (window.api?.pty) {
-        window.api.pty.write(sessionId, data);
-      }
-    });
-
-    // PTY data stream from main process
+    let isCancelled = false;
     let unsubPtyData: (() => void) | undefined;
-    if (window.api?.pty) {
-      unsubPtyData = window.api.pty.onData(({ id, data }) => {
-        if (id === sessionId) {
-          term.write(data, () => {
-            if (window.api?.pty) {
-              window.api.pty.ack(id, data.length);
-            }
-          });
+    let onDataSub: { dispose: () => void } | undefined;
+    let resizeTimer: NodeJS.Timeout | null = null;
+
+    setHandshakeState('pending');
+    setHandshakeError(null);
+
+    const initTerminal = async () => {
+      // 1. Initiate typed handshake with 3s timeout
+      let handshakeData: any = null;
+      try {
+        const handshakePromise = window.api?.window?.ready
+          ? window.api.window.ready({ sessionId })
+          : Promise.reject(new Error('window.api.window.ready is missing'));
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Handshake timed out after 3000ms')), 3000)
+        );
+
+        handshakeData = await Promise.race([handshakePromise, timeoutPromise]);
+      } catch (err: any) {
+        if (!isCancelled) {
+          setHandshakeState('error');
+          setHandshakeError(err?.message || 'Failed to connect to terminal session');
+        }
+        return;
+      }
+
+      if (isCancelled || !containerRef.current) return;
+
+      if (!handshakeData || !handshakeData.success) {
+        setHandshakeState('error');
+        setHandshakeError(handshakeData?.error || 'Handshake rejected by main process');
+        return;
+      }
+
+      if (handshakeData.title) setSessionTitle(handshakeData.title);
+      if (handshakeData.cwd) setSessionCwd(handshakeData.cwd);
+
+      // 2. Initialize Xterm instance
+      const themeKey = (handshakeData.theme || settings.theme || 'midnight') as keyof typeof XTERM_THEMES;
+      const termTheme = XTERM_THEMES[themeKey] || XTERM_THEMES.midnight;
+      const term = new Terminal({
+        cursorBlink: true,
+        cursorStyle: 'block',
+        fontFamily: "'CaskaydiaCove Nerd Font Mono', 'Cascadia Code', Consolas, monospace",
+        fontSize: settings.fontSize || 14,
+        lineHeight: settings.lineHeight || 1.2,
+        theme: termTheme,
+        allowTransparency: true,
+        allowProposedApi: true,
+      });
+
+      const fitAddon = new FitAddon();
+      term.loadAddon(fitAddon);
+      term.loadAddon(new WebLinksAddon());
+
+      term.open(containerRef.current);
+      terminalRef.current = term;
+      fitAddonRef.current = fitAddon;
+
+      // 3. Register Shell Integration OSC handlers
+      if (settings.shellIntegration ?? true) {
+        term.parser.registerOscHandler(133, (data: string) => {
+          const currentY = term.buffer.active.cursorY + term.buffer.active.baseY;
+          useShellIntegrationStore.getState().handleOsc133(sessionId, data, currentY);
+          return true;
+        });
+
+        term.parser.registerOscHandler(7, (data: string) => {
+          useShellIntegrationStore.getState().handleOsc7(sessionId, data);
+          return true;
+        });
+      }
+
+      // 4. Wire user input to PTY
+      onDataSub = term.onData((data) => {
+        if (window.api?.pty && !isReadOnly) {
+          window.api.pty.write(sessionId, data);
         }
       });
-    }
 
-    // Window resize handler
-    const handleResize = () => {
-      try {
-        fitAddon.fit();
-        if (window.api?.pty) {
-          window.api.pty.resize(sessionId, term.cols, term.rows);
-        }
-      } catch (e) {}
+      // 5. Wire PTY data events
+      if (window.api?.pty) {
+        unsubPtyData = window.api.pty.onData(({ id, data }) => {
+          if (id === sessionId) {
+            term.write(data, () => {
+              if (window.api?.pty) {
+                window.api.pty.ack(id, data.length);
+              }
+            });
+          }
+        });
+      }
+
+      // 6. Write scrollback replay buffer from handshake
+      if (handshakeData.scrollback) {
+        term.write(handshakeData.scrollback);
+      }
+
+      // 7. Initial fit & size reporting
+      fitAddon.fit();
+      if (window.api?.pty && term.cols > 0 && term.rows > 0) {
+        window.api.pty.resize(sessionId, term.cols, term.rows);
+      }
+
+      term.focus();
+      setHandshakeState('connected');
+
+      // Double-fit after paint to guarantee accurate layout
+      resizeTimer = setTimeout(() => {
+        try {
+          fitAddon.fit();
+          if (window.api?.pty && term.cols > 0 && term.rows > 0) {
+            window.api.pty.resize(sessionId, term.cols, term.rows);
+          }
+        } catch (_) {}
+      }, 60);
     };
-    window.addEventListener('resize', handleResize);
 
-    // Focus terminal
-    term.focus();
+    initTerminal();
+
+    const handleWindowResize = () => {
+      try {
+        fitAddonRef.current?.fit();
+        if (terminalRef.current && window.api?.pty) {
+          window.api.pty.resize(sessionId, terminalRef.current.cols, terminalRef.current.rows);
+        }
+      } catch (_) {}
+    };
+
+    const handleWindowFocus = () => {
+      terminalRef.current?.focus();
+    };
+
+    window.addEventListener('resize', handleWindowResize);
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      onDataSub.dispose();
+      isCancelled = true;
+      if (resizeTimer) clearTimeout(resizeTimer);
+      window.removeEventListener('resize', handleWindowResize);
+      window.removeEventListener('focus', handleWindowFocus);
+      if (onDataSub) onDataSub.dispose();
       if (unsubPtyData) unsubPtyData();
-      term.dispose();
+      if (terminalRef.current) {
+        terminalRef.current.dispose();
+        terminalRef.current = null;
+      }
     };
-  }, [sessionId, settings.theme, settings.shellIntegration]);
+  }, [sessionId, retryKey, settings.theme, settings.fontSize, settings.lineHeight, settings.shellIntegration]);
 
-  // Read-only keyboard interceptor
+  // Read-only keyboard interceptor & Project Runner hotkey forwarder
   useEffect(() => {
     const term = terminalRef.current;
     if (!term) return;
-    term.attachCustomKeyEventHandler(() => {
+    term.attachCustomKeyEventHandler((e) => {
+      if ((e.ctrlKey || e.metaKey) && e.altKey && e.key.toLowerCase() === 'r') {
+        if (e.type === 'keydown') {
+          window.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'r', ctrlKey: true, altKey: true, bubbles: true })
+          );
+        }
+        return false;
+      }
       if (isReadOnly) return false;
       return true;
     });
@@ -282,7 +353,7 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
   }, [handleContextMenu]);
 
   const handleDock = async () => {
-    if (window.api?.session) {
+    if (window.api?.session?.dock) {
       await window.api.session.dock(sessionId);
     }
   };
@@ -299,6 +370,10 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
     window.api?.window?.close();
   };
 
+  const handleRetry = () => {
+    setRetryKey((k) => k + 1);
+  };
+
   const term = terminalRef.current;
 
   return (
@@ -309,7 +384,7 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
             <TerminalIcon size={14} />
           </div>
           <span className={styles.sessionTitle}>{sessionTitle}</span>
-          {sessionCwd && <span className={styles.sessionCwd}>{sessionCwd}</span>}
+          {effectiveCwd && <span className={styles.sessionCwd}>{effectiveCwd}</span>}
         </div>
 
         <div className={styles.titleRight}>
@@ -376,23 +451,116 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
         </div>
       )}
 
-      <main
-        className={styles.terminalArea}
-        ref={containerRef}
-        style={{
-          width: isActionsPanelOpen ? 'calc(100% - 360px)' : '100%',
-          transition: 'width 0.15s ease',
-        }}
-      />
+      {/* Main Terminal Viewport */}
+      {handshakeState === 'error' ? (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            padding: '24px',
+            backgroundColor: '#0B0D10',
+            color: '#F87171',
+            textAlign: 'center',
+          }}
+        >
+          <AlertTriangle size={36} />
+          <div>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#E6E8EB' }}>
+              Connection Error
+            </h3>
+            <p style={{ margin: 0, fontSize: '13px', color: '#94A3B8', maxWidth: '420px' }}>
+              {handshakeError || 'The terminal session did not respond in time.'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={handleRetry}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: '#2563EB',
+                border: 'none',
+                borderRadius: '4px',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              <RotateCcw size={12} />
+              <span>Retry</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDock}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                background: '#334155',
+                border: 'none',
+                borderRadius: '4px',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              <ArrowDownToLine size={12} />
+              <span>Dock to Main Window</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleClose}
+              style={{
+                padding: '6px 14px',
+                background: '#1E293B',
+                border: '1px solid #475569',
+                borderRadius: '4px',
+                color: '#E2E8F0',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : (
+        <main
+          className={styles.terminalArea}
+          ref={containerRef}
+          style={{
+            width: isActionsPanelOpen ? 'calc(100% - 360px)' : '100%',
+            transition: 'width 0.15s ease',
+          }}
+        />
+      )}
 
+      {/* Project Runner Bar Strip */}
       <ProjectRunnerBar
         sessionId={sessionId}
-        cwd={cwd}
+        cwd={effectiveCwd || undefined}
         onRefitTerminal={() => {
           if (fitAddonRef.current) fitAddonRef.current.fit();
         }}
+        onRunInNewTab={(tabCwd, commandText) => {
+          if (window.api?.session?.createTab) {
+            window.api.session.createTab(tabCwd, commandText);
+          }
+        }}
+        onRunInSplit={(commandText) => {
+          if (window.api?.session?.createTab) {
+            window.api.session.createTab(effectiveCwd || undefined, commandText);
+          }
+        }}
       />
-
 
       {/* Custom Context Menu */}
       {contextMenuPos && term && (
@@ -445,57 +613,47 @@ export const StandaloneTerminalView: React.FC<StandaloneTerminalViewProps> = ({ 
         />
       )}
 
-      {/* Multi-line Paste Confirmation Dialog */}
-      <MultiLinePasteDialog
-        isOpen={Boolean(pendingPasteText)}
-        text={pendingPasteText || ''}
-        onPaste={() => {
-          if (pendingPasteText) performPaste(pendingPasteText, false);
-          setPendingPasteText(null);
-        }}
-        onPasteSingleLine={() => {
-          if (pendingPasteText) performPaste(pendingPasteText, true);
-          setPendingPasteText(null);
-        }}
-        onCancel={() => setPendingPasteText(null)}
-        onDontAskAgain={() => updateSettings({ confirmMultiLinePaste: false })}
-      />
+      {/* Dialogs */}
+      {pendingPasteText && (
+        <MultiLinePasteDialog
+          text={pendingPasteText}
+          onConfirmPaste={(singleLine: boolean) => {
+            performPaste(pendingPasteText, singleLine);
+            setPendingPasteText(null);
+          }}
+          onCancel={() => setPendingPasteText(null)}
+          onDontAskAgain={() => {}}
+        />
+      )}
 
-      {/* Snippet Variable Prompt Dialog */}
-      <SnippetVariableDialog
-        isOpen={Boolean(variableSnippet)}
-        snippet={variableSnippet?.snippet || null}
-        onInsert={(filled) => {
-          if (window.api?.pty && !isReadOnly) {
-            window.api.pty.write(sessionId, filled);
-          }
-          terminalRef.current?.focus();
-          setVariableSnippet(null);
-        }}
-        onInsertAndRun={(filled) => {
-          if (window.api?.pty && !isReadOnly) {
-            window.api.pty.write(sessionId, filled + '\r');
-          }
-          terminalRef.current?.focus();
-          setVariableSnippet(null);
-        }}
-        onCancel={() => setVariableSnippet(null)}
-      />
+      {variableSnippet && (
+        <SnippetVariableDialog
+          snippet={variableSnippet.snippet}
+          onConfirm={(resolved) => {
+            if (window.api?.pty && !isReadOnly) {
+              window.api.pty.write(sessionId, resolved + (variableSnippet.runImmediately ? '\r' : ''));
+            }
+            setVariableSnippet(null);
+            term?.focus();
+          }}
+          onCancel={() => setVariableSnippet(null)}
+        />
+      )}
 
-      {/* Dangerous Command Warning Dialog */}
-      <DangerousCommandDialog
-        isOpen={Boolean(dangerousCmd)}
-        command={dangerousCmd?.command || ''}
-        reason={dangerousCmd?.reason || ''}
-        onConfirm={() => {
-          if (dangerousCmd && window.api?.pty && !isReadOnly) {
-            window.api.pty.write(sessionId, dangerousCmd.command + '\r');
-          }
-          terminalRef.current?.focus();
-          setDangerousCmd(null);
-        }}
-        onCancel={() => setDangerousCmd(null)}
-      />
+      {dangerousCmd && (
+        <DangerousCommandDialog
+          command={dangerousCmd.command}
+          reason={dangerousCmd.reason}
+          onConfirm={() => {
+            if (window.api?.pty && !isReadOnly) {
+              window.api.pty.write(sessionId, dangerousCmd.command + '\r');
+            }
+            setDangerousCmd(null);
+            term?.focus();
+          }}
+          onCancel={() => setDangerousCmd(null)}
+        />
+      )}
     </div>
   );
 };

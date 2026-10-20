@@ -29,11 +29,15 @@ interface WorkspaceState {
   activeTabId: string;
   activePaneId: string;
   sidebarExpanded: boolean;
-  activeNavTab: 'terminals' | 'profiles' | 'scripts' | 'settings' | 'docs';
+  activeNavTab: 'terminals' | 'profiles' | 'scripts' | 'agents' | 'settings' | 'docs';
+  docsTargetTopic?: string;
+  docsTargetSection?: string;
 
   setSidebarExpanded: (expanded: boolean) => void;
   toggleSidebar: () => void;
-  setActiveNavTab: (nav: 'terminals' | 'profiles' | 'scripts' | 'settings' | 'docs') => void;
+  setActiveNavTab: (nav: 'terminals' | 'profiles' | 'scripts' | 'agents' | 'settings' | 'docs') => void;
+  openDocs: (topicId: string, sectionId?: string) => void;
+  clearDocsTarget: () => void;
 
   setPaneTitle: (paneId: string, title: string) => void;
   setPaneCwd: (paneId: string, cwd: string) => void;
@@ -68,6 +72,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setSidebarExpanded: (expanded) => set({ sidebarExpanded: expanded }),
   toggleSidebar: () => set((state) => ({ sidebarExpanded: !state.sidebarExpanded })),
   setActiveNavTab: (nav) => set({ activeNavTab: nav }),
+  openDocs: (topicId, sectionId) =>
+    set({
+      activeNavTab: 'docs',
+      docsTargetTopic: topicId,
+      docsTargetSection: sectionId,
+    }),
+  clearDocsTarget: () => set({ docsTargetTopic: undefined, docsTargetSection: undefined }),
 
   setPaneTitle: (paneId, title) =>
     set((state) => {

@@ -1,0 +1,26 @@
+# Terminal Manager Code Owners
+# Core maintainer: @mughaldev0
+
+# Default rule: everything owned by core maintainer
+* @mughaldev0
+
+# Electron Main Process & ConPTY lifecycle
+/src/main/ @mughaldev0
+/src/main/sessionManager.ts @mughaldev0
+/src/main/windowConfig.ts @mughaldev0
+/src/main/diagnosticsManager.ts @mughaldev0
+
+# Preload bridge & Security boundaries
+/src/preload/ @mughaldev0
+
+# React 19 Renderer & Styling
+/src/renderer/ @mughaldev0
+/src/renderer/styles/tokens.css @mughaldev0
+
+# Documentation & Specifications
+/docs/ @mughaldev0
+/docs/content/ @mughaldev0
+
+# CI/CD & GitHub Workflows
+/.github/ @mughaldev0
+/.github/workflows/ @mughaldev0

@@ -6,6 +6,10 @@ import { profilesStore } from './profilesStore';
 import { openTerminalFromRequest } from './launchManager';
 import { scriptsStore } from './scripts/scriptsStore';
 import { scriptRunner } from './scripts/scriptRunner';
+import { settingsStore } from './settingsStore';
+import { agentDetector } from './ai-agents/agentDetector';
+import { agentStateStore } from './ai-agents/agentStateStore';
+import { launchAgent } from './ai-agents/agentLauncher';
 
 let tray: Tray | null = null;
 let hasShownBackgroundNotification = false;
@@ -184,6 +188,70 @@ export function initTray(
         },
       },
     ];
+
+    const settings = settingsStore.get();
+    if (settings.aiAgents?.showInTrayMenu !== false) {
+      const installedAgents = agentDetector.getInstalledFromDiskCache();
+      const aiAgentSubmenu: Electron.MenuItemConstructorOptions[] = [];
+
+      if (installedAgents.length > 0) {
+        // Group 1: direct launch in last used folder
+        for (const ag of installedAgents) {
+          const userState = agentStateStore.getAgentState(ag.id);
+          const lastFolder = userState.lastFolder;
+          const label = lastFolder ? `${ag.name} in ${lastFolder}` : ag.name;
+          aiAgentSubmenu.push({
+            label,
+            click: () => {
+              launchAgent({ agentId: ag.id, cwd: lastFolder, mode: 'tab' }, showMainWindow);
+            },
+          });
+        }
+
+        aiAgentSubmenu.push({ type: 'separator' });
+
+        // Group 2: launch in folder... through folder picker
+        const launchInFolderItems: Electron.MenuItemConstructorOptions[] = installedAgents.map((ag) => ({
+          label: ag.name,
+          click: async () => {
+            const res = await dialog.showOpenDialog({
+              title: `Select Directory for ${ag.name}`,
+              properties: ['openDirectory'],
+            });
+            if (!res.canceled && res.filePaths[0]) {
+              launchAgent({ agentId: ag.id, cwd: res.filePaths[0], mode: 'tab' }, showMainWindow);
+            }
+          },
+        }));
+
+        aiAgentSubmenu.push({
+          label: 'Launch in folder...',
+          submenu: launchInFolderItems,
+        });
+      } else {
+        aiAgentSubmenu.push({
+          label: 'No AI agents installed',
+          enabled: false,
+        });
+      }
+
+      aiAgentSubmenu.push({ type: 'separator' });
+      aiAgentSubmenu.push({
+        label: 'Agents panel...',
+        click: () => {
+          showMainWindow();
+          const win = getMainWindow();
+          if (win && !win.isDestroyed()) {
+            win.webContents.send('app:navigate', 'agents');
+          }
+        },
+      });
+
+      menuTemplate.push({
+        label: 'AI Agents',
+        submenu: aiAgentSubmenu,
+      });
+    }
 
     if (sequenceMenuItems.length > 0) {
       menuTemplate.push({

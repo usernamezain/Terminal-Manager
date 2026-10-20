@@ -48,8 +48,21 @@ export const ProjectRunnerBar: React.FC<ProjectRunnerBarProps> = ({
 
   // Initial detection & cwd change detection
   useEffect(() => {
-    if (!cwd) return;
-    detect(sessionId, cwd);
+    if (cwd) {
+      detect(sessionId, cwd);
+      return;
+    }
+    if (window.api?.session?.list) {
+      window.api.session
+        .list()
+        .then((list) => {
+          const s = list.find((item) => item.id === sessionId);
+          if (s && s.cwd) {
+            detect(sessionId, s.cwd);
+          }
+        })
+        .catch(() => {});
+    }
   }, [sessionId, cwd, detect]);
 
   // Listen for file changes on manifests

@@ -36,6 +36,7 @@ import { logHop } from './launchDebugger';
 import { windowManager } from './windowManager';
 import { snippetsStore } from './snippetsStore';
 import { registerProjectRunnerHandlers } from './project-runner/projectRunnerHandlers';
+import { registerAgentHandlers } from './ai-agents/agentHandlers';
 
 let ipcHandlersInitialized = false;
 
@@ -46,6 +47,7 @@ export function setupIpcHandlers(mainWindow?: BrowserWindow): void {
   ipcHandlersInitialized = true;
 
   registerProjectRunnerHandlers();
+  registerAgentHandlers();
 
 
   // PTY Create
@@ -114,8 +116,16 @@ export function setupIpcHandlers(mainWindow?: BrowserWindow): void {
   });
 
   // Session Dock to Main
-  ipcMain.handle(IPC_CHANNELS.SESSION_DOCK, async (_event, args: { sessionId: string }) => {
-    return standaloneWindowManager.dockToMain(args.sessionId, () => windowManager.getMainWindow());
+  ipcMain.handle(IPC_CHANNELS.SESSION_DOCK, async (event, args?: { sessionId?: string }) => {
+    let sId = args?.sessionId;
+    if (!sId) {
+      const callerWin = BrowserWindow.fromWebContents(event.sender);
+      if (callerWin) {
+        sId = standaloneWindowManager.getSessionIdByWindow(callerWin);
+      }
+    }
+    if (!sId) return false;
+    return standaloneWindowManager.dockToMain(sId, () => windowManager.getMainWindow());
   });
 
   // Session Pop Out
@@ -137,6 +147,35 @@ export function setupIpcHandlers(mainWindow?: BrowserWindow): void {
         sessionManager.kill(args.sessionId);
         if (win && !win.isDestroyed()) win.destroy();
       }
+    }
+  );
+
+  // Session Create Tab in Main Window (e.g. from Standalone Project Runner)
+  ipcMain.handle(
+    IPC_CHANNELS.SESSION_CREATE_TAB,
+    async (_event, args: { cwd?: string; command?: string }) => {
+      const { openTerminalFromRequest } = await import('./launchManager');
+      const res = openTerminalFromRequest(
+        {
+          cwd: args?.cwd,
+          mode: 'tab',
+        },
+        () => {
+          const mw = windowManager.getMainWindow();
+          if (mw && !mw.isDestroyed()) {
+            mw.show();
+            mw.focus();
+          }
+          return mw!;
+        }
+      );
+
+      if (res.sessionId && args?.command) {
+        setTimeout(() => {
+          sessionManager.write(res.sessionId, `${args.command}\r`);
+        }, 400);
+      }
+      return res;
     }
   );
 
@@ -266,6 +305,23 @@ export function setupIpcHandlers(mainWindow?: BrowserWindow): void {
     return Boolean(win && !win.isDestroyed() && win.isMaximized());
   });
 
+  // Typed Window Handshake (Renderer is ready and mounted)
+  ipcMain.handle(IPC_CHANNELS.WINDOW_READY, async (event, args?: { windowId?: number; sessionId?: string }) => {
+    const callerWin = BrowserWindow.fromWebContents(event.sender);
+    if (!callerWin) return { success: false, error: 'Caller window not found' };
+
+    const managed = windowManager.get(callerWin.id);
+    const sId =
+      args?.sessionId ||
+      managed?.sessionIds[0] ||
+      standaloneWindowManager.getSessionIdByWindow(callerWin);
+
+    if (sId) {
+      return standaloneWindowManager.completeHandshake(sId, callerWin);
+    }
+    return { success: true, isMain: true };
+  });
+
   ipcMain.handle('app:shell-memory', async () => {
     const pids = ptyManager.getActivePids();
     if (pids.length === 0) return { count: 0, totalMemoryMb: 0, formatted: '0 MB' };
@@ -295,6 +351,43 @@ export function setupIpcHandlers(mainWindow?: BrowserWindow): void {
 
   ipcMain.handle('app:pool-status', async () => {
     return shellPool.getStatus();
+  });
+
+  // =========================================================================
+  // Log Detector IPC Handlers
+  // =========================================================================
+
+  ipcMain.handle(IPC_CHANNELS.APP_GET_RECENT_LOGS, async () => {
+    return logger.getRecentLogs();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APP_GET_LOG_TAIL, async (_event, args?: { maxBytes?: number; maxLines?: number }) => {
+    return logger.getLogTail(args?.maxBytes, args?.maxLines);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APP_CLEAR_RECENT_LOGS, async () => {
+    logger.clearRecentLogs();
+    return true;
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APP_OPEN_LOG_FILE, async () => {
+    await logger.openLogFile();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APP_OPEN_LOG_FOLDER, async () => {
+    await logger.openLogFolder();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.APP_SEND_RENDERER_LOG, async (_event, payload) => {
+    if (payload && typeof payload.message === 'string') {
+      logger.addEntry({
+        level: payload.level || 'info',
+        message: payload.message,
+        details: payload.details,
+        source: payload.source || 'renderer',
+        category: payload.category,
+      });
+    }
   });
 
   // =========================================================================
@@ -581,5 +674,33 @@ export function setupIpcHandlers(mainWindow?: BrowserWindow): void {
     if (res.canceled || !res.filePath) return false;
     fs.writeFileSync(res.filePath, content, 'utf8');
     return true;
+  });
+
+  // Diagnostics and Issue Reporting Handlers
+  ipcMain.handle('app:copy-diagnostics', async () => {
+    const { generateDiagnosticsReport } = await import('./diagnosticsManager');
+    return await generateDiagnosticsReport();
+  });
+
+  ipcMain.handle('app:report-issue', async (_event, args?: { type?: 'bug' | 'feature' }) => {
+    const issueType = args?.type || 'bug';
+    const version = app.getVersion() || '0.1.0';
+    const osVer = `Windows (${process.arch})`;
+    const baseUrl = 'https://github.com/mughaldev0/Terminal-Manager/issues/new';
+    let targetUrl = baseUrl;
+
+    if (issueType === 'bug') {
+      const params = new URLSearchParams({
+        template: 'bug_report.yml',
+        'app-version': version,
+        'windows-version': osVer,
+      });
+      targetUrl = `${baseUrl}?${params.toString()}`;
+    } else {
+      targetUrl = `${baseUrl}?template=feature_request.yml`;
+    }
+
+    await shell.openExternal(targetUrl);
+    return { success: true };
   });
 }

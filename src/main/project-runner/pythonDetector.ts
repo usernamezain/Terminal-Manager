@@ -342,6 +342,46 @@ export function detectPythonProject(
   // Run group
   const runCommands: ProjectCommand[] = [];
 
+  // Parse scripts from pyproject.toml ([project.scripts], [tool.poetry.scripts], etc.)
+  if (pyprojectText) {
+    const lines = pyprojectText.split(/\r?\n/);
+    let inScriptsSection = false;
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (line.startsWith('[') && line.endsWith(']')) {
+        const header = line.slice(1, -1).trim();
+        inScriptsSection = [
+          'project.scripts',
+          'tool.poetry.scripts',
+          'tool.pdm.scripts',
+          'tool.taskipy.tasks',
+          'tool.poe.tasks',
+        ].includes(header);
+        continue;
+      }
+      if (inScriptsSection && line && !line.startsWith('#')) {
+        const eqIdx = line.indexOf('=');
+        if (eqIdx > 0) {
+          const scriptName = line.slice(0, eqIdx).trim();
+          if (/^[a-zA-Z0-9_-]+$/.test(scriptName)) {
+            const runnerTool = tool === 'poetry' ? 'poetry' : tool === 'uv' ? 'uv' : tool === 'pdm' ? 'pdm' : 'python';
+            const cmdText = runnerTool === 'python' ? `python -m ${scriptName}` : `${runnerTool} run ${scriptName}`;
+            const cmdArgs = runnerTool === 'python' ? ['-m', scriptName] : ['run', scriptName];
+            runCommands.push({
+              id: `python-script-${scriptName}`,
+              label: scriptName,
+              commandText: cmdText,
+              tool: runnerTool,
+              args: cmdArgs,
+              cwd: folder,
+              category: 'run',
+            });
+          }
+        }
+      }
+    }
+  }
+
   // Django commands
   if (hasManagePy) {
     runCommands.push({

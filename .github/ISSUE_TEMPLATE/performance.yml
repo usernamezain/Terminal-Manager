@@ -1,0 +1,48 @@
+name: ⚡ Performance Regression
+description: Report high CPU usage, slow startup, input lag, or memory leaks
+title: "[Perf]: "
+labels: ["performance", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terminal Manager is engineered for sub-second responses and low resource overhead. Thank you for reporting performance anomalies.
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario Description
+      description: Describe the scenario where high latency, excessive CPU, or memory inflation occurs.
+      placeholder: When streaming large output files (over 50,000 lines), keystroke echo delay increases...
+    validations:
+      required: true
+  - type: dropdown
+    id: metric_type
+    attributes:
+      label: Primary Performance Issue
+      options:
+        - Cold Startup Time
+        - Keystroke-to-Echo Latency
+        - Idle CPU Usage (Foreground or Tray)
+        - Memory Leak / Unbounded Working Set
+        - PTY Output Throughput / Backpressure
+        - Panel Switching Delay
+      validations:
+        required: true
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Measurements / Diagnostics
+      description: Attach benchmark numbers (npm run perf:bench) or redacted diagnostics report.
+      placeholder: |
+        CPU: 18% during idle
+        Memory: 650 MB after 2 hours
+    validations:
+      required: false
+  - type: input
+    id: specs
+    attributes:
+      label: System Specifications
+      description: CPU, RAM, GPU, and Storage type (SSD/HDD).
+      placeholder: Intel Core i7-12700H, 32GB RAM, NVIDIA RTX 3060, NVMe SSD
+    validations:
+      required: true

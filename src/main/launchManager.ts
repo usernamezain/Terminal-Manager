@@ -13,6 +13,8 @@ export interface OpenTerminalRequest {
   profileId?: string;
   mode?: 'window' | 'tab' | 'auto';
   showMainWindowFn?: () => BrowserWindow;
+  env?: Record<string, string>;
+  title?: string;
 }
 
 const DEBUG = Boolean(process.env.TERMINAL_DEBUG || process.env.DEBUG);
@@ -57,6 +59,8 @@ export function openTerminalFromRequest(
     cwd: resolvedCwd,
     cols: 80,
     rows: 24,
+    env: request.env,
+    title: request.title,
   });
 
   if (DEBUG) {
@@ -126,7 +130,7 @@ export function openTerminalFromRequest(
       mainWin.webContents.send('session:dock-tab', {
         sessionId: session.id,
         profileId: targetProfile?.id,
-        title: targetProfile?.name || 'Terminal',
+        title: request.title || targetProfile?.name || 'Terminal',
         cwd: resolvedCwd,
       });
 

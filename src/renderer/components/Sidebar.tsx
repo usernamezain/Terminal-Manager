@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Terminal, Layers, PlaySquare, BookOpen, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Terminal, Layers, PlaySquare, Bot, BookOpen, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useWorkspaceStore } from '@renderer/store/useWorkspaceStore';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
 import styles from './Sidebar.module.css';
@@ -10,7 +10,7 @@ interface SidebarProps {
 }
 
 interface NavItemDef {
-  id: 'terminals' | 'profiles' | 'scripts' | 'docs' | 'settings';
+  id: 'terminals' | 'profiles' | 'scripts' | 'agents' | 'docs' | 'settings';
   label: string;
   icon: React.ElementType;
   badge?: string;
@@ -30,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { id: 'terminals', label: 'Terminals', icon: Terminal },
     { id: 'profiles', label: 'Profiles', icon: Layers },
     { id: 'scripts', label: 'Script Runner', icon: PlaySquare, shortcut: 'Ctrl+Shift+R' },
+    { id: 'agents', label: 'AI Agents', icon: Bot, shortcut: 'Ctrl+Shift+G' },
     { id: 'docs', label: 'Documentation', icon: BookOpen },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
@@ -50,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     setActiveTooltip(null);
   };
 
-  const handleClick = (id: 'terminals' | 'profiles' | 'scripts' | 'docs' | 'settings') => {
+  const handleClick = (id: 'terminals' | 'profiles' | 'scripts' | 'agents' | 'docs' | 'settings') => {
     setActiveNavTab(id);
     if (id === 'settings' && onOpenSettings) {
       onOpenSettings('general');

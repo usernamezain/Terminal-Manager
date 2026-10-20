@@ -3,6 +3,7 @@ import { ShellExperienceStatus, ShellExperienceSettings } from '../../../shared/
 import { SettingsSection } from '../../components/settings/SettingsSection';
 import { SegmentedRadio } from '../../components/settings/SegmentedRadio';
 import layoutStyles from '../../components/settings/SettingsLayout.module.css';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import { RefreshCw, Play, Download } from 'lucide-react';
 
 interface OverviewSectionProps {
@@ -88,6 +89,15 @@ export const OverviewSection: React.FC<OverviewSectionProps> = ({
       <SettingsSection
         title="Execution Mode & Isolation Boundary"
         description="Choose whether customization scripts apply exclusively inside Terminal Manager or system-wide."
+        action={
+          <button
+            type="button"
+            className={layoutStyles.learnMoreLink}
+            onClick={() => useWorkspaceStore.getState().openDocs('shell-experience')}
+          >
+            Learn more
+          </button>
+        }
       >
         <SegmentedRadio<'app-scoped' | 'system-wide'>
           name="execution-mode"

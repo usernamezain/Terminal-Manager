@@ -1,0 +1,32 @@
+name: 📚 Documentation Issue
+description: Report missing, unclear, or incorrect documentation
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us keep documentation accurate and easy to follow!
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Page or Section
+      description: Where is the inaccurate or missing documentation?
+      placeholder: docs/content/08-shell-experience.md or In-App Docs (F1)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of Issue
+      description: What is inaccurate, outdated, or confusing?
+      placeholder: The description of Fast Start caching refers to a deprecated parameter...
+    validations:
+      required: true
+  - type: textarea
+    id: suggested_change
+    attributes:
+      label: Suggested Correction
+      description: How should the documentation be updated?
+    validations:
+      required: false

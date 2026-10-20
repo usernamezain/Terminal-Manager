@@ -8,6 +8,8 @@ import {
   EcosystemType,
 } from '../../../shared/projectRunnerTypes';
 import { useProjectRunnerStore } from './useProjectRunnerStore';
+import { useAgentsStore } from '../ai-agents/useAgentsStore';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import styles from './ProjectRunnerMenu.module.css';
 
 interface ProjectRunnerMenuProps {
@@ -39,6 +41,17 @@ export const ProjectRunnerMenu: React.FC<ProjectRunnerMenuProps> = ({
   const { projects, storedData, runCommand, togglePin } = useProjectRunnerStore();
   const project: ProjectInfo | null = projects[sessionId] || null;
   const projectStore = project?.rootPath ? storedData[project.rootPath] : null;
+
+  const agents = useAgentsStore((state) => state.agents);
+  const loadAgents = useAgentsStore((state) => state.loadAgents);
+
+  useEffect(() => {
+    if (agents.length === 0) loadAgents();
+  }, [agents.length, loadAgents]);
+
+  const installedAgents = useMemo(() => {
+    return agents.filter((a) => a.state.status === 'installed');
+  }, [agents]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const submenuRef = useRef<HTMLDivElement>(null);
@@ -112,14 +125,6 @@ export const ProjectRunnerMenu: React.FC<ProjectRunnerMenuProps> = ({
     async (cmd: ProjectCommand, e: React.MouseEvent) => {
       e.stopPropagation();
 
-      if (cmd.category === 'package' && (cmd.id.includes('add-package') || cmd.id.includes('add-dev-package'))) {
-        const ecoType = cmd.id.startsWith('node') ? 'node' : 'python';
-        const isDev = cmd.id.includes('dev');
-        onClose();
-        onOpenAddPackage(ecoType, isDev);
-        return;
-      }
-
       let target: RunTarget = 'terminal';
       if (e.ctrlKey || e.metaKey) {
         target = 'new-tab';
@@ -127,6 +132,30 @@ export const ProjectRunnerMenu: React.FC<ProjectRunnerMenuProps> = ({
         target = 'split';
       } else if (e.altKey) {
         target = 'copy';
+      }
+
+      if (cmd.id.startsWith('ai-agent-')) {
+        const agentId = cmd.id.replace('ai-agent-', '');
+        onClose();
+        let launchMode: 'terminal' | 'tab' | 'split' | 'window' = 'terminal';
+        if (e.ctrlKey || e.metaKey) launchMode = 'window';
+        else if (e.shiftKey) launchMode = 'tab';
+
+        window.api?.aiAgents?.launch({
+          agentId,
+          cwd: project?.cwd || project?.rootPath,
+          mode: launchMode,
+          sessionId,
+        });
+        return;
+      }
+
+      if (cmd.category === 'package' && (cmd.id.includes('add-package') || cmd.id.includes('add-dev-package'))) {
+        const ecoType = cmd.id.startsWith('node') ? 'node' : 'python';
+        const isDev = cmd.id.includes('dev');
+        onClose();
+        onOpenAddPackage(ecoType, isDev);
+        return;
       }
 
       onClose();
@@ -376,6 +405,43 @@ export const ProjectRunnerMenu: React.FC<ProjectRunnerMenuProps> = ({
           );
         })}
 
+        {/* AI Agents Group */}
+        {installedAgents.length > 0 && (
+          <>
+            <div className={styles.divider} />
+            <button
+              className={styles.row}
+              onMouseEnter={(e) => {
+                if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+                const rect = e.currentTarget.getBoundingClientRect();
+                hoverTimerRef.current = setTimeout(() => {
+                  setActiveSubmenu({
+                    id: 'ai-agents-group',
+                    title: 'AI Agents',
+                    commands: installedAgents.map((ag) => ({
+                      id: `ai-agent-${ag.entry.id}`,
+                      label: ag.entry.name,
+                      tool: ag.entry.command,
+                      args: [],
+                      commandText: ag.entry.command,
+                      category: 'custom' as const,
+                      isPrimary: false,
+                    })),
+                    parentRect: rect,
+                  });
+                }, 120);
+              }}
+              onMouseLeave={handleMouseLeaveRow}
+            >
+              <div className={styles.rowLeft}>
+                <span className={styles.rowIcon}>🤖</span>
+                <span className={styles.rowLabel}>AI Agents</span>
+              </div>
+              <span className={styles.chevronIcon}>›</span>
+            </button>
+          </>
+        )}
+
         <div className={styles.divider} />
 
         {/* Run in Order / Queue Action */}
@@ -389,6 +455,22 @@ export const ProjectRunnerMenu: React.FC<ProjectRunnerMenuProps> = ({
           <div className={styles.rowLeft}>
             <span className={styles.rowIcon}>⚡</span>
             <span className={styles.rowLabel}>Run in order...</span>
+          </div>
+        </button>
+
+        <div className={styles.divider} />
+
+        {/* Learn more Footer Action */}
+        <button
+          className={styles.row}
+          onClick={() => {
+            onClose();
+            useWorkspaceStore.getState().openDocs('project-runner');
+          }}
+        >
+          <div className={styles.rowLeft}>
+            <span className={styles.rowIcon}>📖</span>
+            <span className={styles.rowLabel} style={{ color: 'var(--accent)' }}>Learn more</span>
           </div>
         </button>
       </div>
@@ -426,6 +508,7 @@ export const ProjectRunnerMenu: React.FC<ProjectRunnerMenuProps> = ({
           ))}
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 };

@@ -67,6 +67,8 @@ const initialRoot: PaneNode = {
 };
 
 const pendingPtyCreations = new Map<string, Promise<string>>();
+let uniqueIdCounter = 0;
+const nextUniqueId = (prefix: string) => `${prefix}-${Date.now()}-${++uniqueIdCounter}`;
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   tabs: [
@@ -97,9 +99,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       set({ toastMessage: 'Warning: 30+ terminals open. Memory usage may be high.' });
     }
 
-    const tabId = `tab-${Date.now()}`;
-    const paneId = `pane-${Date.now()}`;
-    let ptyId = `pty-${Date.now()}`;
+    const tabId = nextUniqueId('tab');
+    const paneId = nextUniqueId('pane');
+    let ptyId = nextUniqueId('pty');
 
     const profiles = useProfilesStore.getState().profiles;
     const profile = profileId
@@ -131,6 +133,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       type: 'pane',
       sessionId: ptyId,
       title,
+      cwd: cwd || profile?.cwd,
     };
 
     const newTabObj: Tab = {
@@ -150,14 +153,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   dockTab: (data) => {
     const { tabs } = get();
-    const tabId = `tab-${Date.now()}`;
-    const paneId = `pane-${Date.now()}`;
+    const tabId = nextUniqueId('tab');
+    const paneId = nextUniqueId('pane');
 
     const newPane: PaneNode = {
       id: paneId,
       type: 'pane',
       sessionId: data.sessionId,
       title: data.title || 'Terminal',
+      cwd: data.cwd,
     };
 
     const newTabObj: Tab = {
@@ -168,8 +172,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       focusedPaneId: paneId,
     };
 
+    // If the only tab is an uninitialized placeholder tab, replace it cleanly
+    const firstTab = tabs[0];
+    const hasOnlyEmptyPlaceholder =
+      tabs.length === 1 &&
+      Boolean(firstTab && firstTab.root.type === 'pane' && (!firstTab.root.sessionId || firstTab.root.sessionId === ''));
+
+    const nextTabs = hasOnlyEmptyPlaceholder ? [newTabObj] : [...tabs, newTabObj];
+
     set({
-      tabs: [...tabs, newTabObj],
+      tabs: nextTabs,
       activeTabId: tabId,
     });
   },
@@ -191,8 +203,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
       const remaining = tabs.filter((t) => t.id !== targetTab.id);
       if (remaining.length === 0) {
-        const newTId = `tab-${Date.now()}`;
-        const newPId = `pane-${Date.now()}`;
+        const newTId = nextUniqueId('tab');
+        const newPId = nextUniqueId('pane');
         const freshTab: Tab = {
           id: newTId,
           title: 'Terminal 1',
@@ -295,6 +307,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       type: 'pane',
       sessionId: ptyId,
       title,
+      cwd: profile?.cwd,
     };
 
     const newRoot = treeSplitPane(activeTab.root, focusedId, direction, newPane);
@@ -555,7 +568,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (
       currentPane.sessionId &&
       currentPane.sessionId !== '' &&
-      !currentPane.sessionId.startsWith('pty-1') &&
       currentPane.sessionId !== 'pty-fresh'
     ) {
       return currentPane.sessionId;

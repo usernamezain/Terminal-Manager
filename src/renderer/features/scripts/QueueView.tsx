@@ -46,24 +46,20 @@ export const QueueView: React.FC = () => {
 
   const outputRef = useRef<HTMLPreElement | null>(null);
 
-  // Live elapsed time tick: runs once per second only while view is mounted
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNowSec(Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Auto-scroll output panel to bottom unless paused
-  useEffect(() => {
-    if (!isPauseScroll && outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
-    }
-  }, [liveOutput, isPauseScroll]);
-
   const queue = runnerState.queue;
   const isRunning = runnerState.status === 'running';
   const isPaused = runnerState.status === 'paused';
+
+  // Live elapsed time tick: runs once per second only while queue is actively running
+  useEffect(() => {
+    if (!isRunning) return;
+    const timer = setInterval(() => {
+      if (!document.hidden) {
+        setNowSec(Date.now());
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isRunning]);
 
   const completedCount = queue.filter(
     (q) => q.status === 'succeeded' || q.status === 'failed' || q.status === 'timed-out' || q.status === 'cancelled' || q.status === 'skipped'

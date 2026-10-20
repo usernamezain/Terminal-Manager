@@ -40,6 +40,11 @@ export class SnippetsStore {
         }
       } catch (err) {
         logger.error('Failed to parse snippets.json, restoring defaults:', err);
+        try {
+          if (fs.existsSync(file)) {
+            fs.copyFileSync(file, `${file}.corrupt.${Date.now()}.bak`);
+          }
+        } catch {}
       }
     }
 

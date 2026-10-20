@@ -1,5 +1,6 @@
 import { ScriptRunnerSettings } from './scriptRunnerTypes';
 import { ProjectRunnerSettings } from './projectRunnerTypes';
+export * from './logTypes';
 
 export type WindowMaterial = 'mica' | 'acrylic' | 'solid';
 export type UiDensity = 'compact' | 'normal' | 'comfortable';
@@ -38,12 +39,20 @@ export interface AppSettings {
   contextMenuVisibility?: Record<string, boolean>;
   scriptRunner?: Partial<ScriptRunnerSettings>;
   projectRunner?: Partial<ProjectRunnerSettings>;
+  aiAgents?: {
+    defaultLaunchMode?: 'terminal' | 'tab' | 'window';
+    showInExplorerMenu?: boolean;
+    showInTrayMenu?: boolean;
+    extraPathDirs?: string[];
+    autoRescanOnStart?: boolean;
+  };
 }
 
 export * from './scriptRunnerTypes';
 export * from './snippetTypes';
 export * from './terminalUtils';
 export * from './projectRunnerTypes';
+export * from './agentTypes';
 
 
 export interface SessionInfo {
@@ -88,6 +97,8 @@ export interface PtyCreateArgs {
   admin?: boolean;
   shellPath?: string;
   shellArgs?: string[];
+  env?: Record<string, string>;
+  title?: string;
 }
 
 export interface PtyResizeArgs {
@@ -133,6 +144,7 @@ export interface WindowControlApi {
   unmaximize: () => void;
   close: () => void;
   isMaximized: () => Promise<boolean>;
+  ready: (payload?: { windowId?: number; sessionId?: string }) => Promise<any>;
 }
 
 export interface ProcessInfo {
@@ -175,6 +187,7 @@ export interface SessionApi {
   dock: (sessionId: string) => Promise<boolean>;
   popOut: (sessionId: string) => Promise<boolean>;
   closeStandalone: (sessionId: string, action: 'dock' | 'background' | 'terminate') => Promise<void>;
+  createTab?: (cwd?: string, command?: string) => Promise<{ sessionId: string; windowId?: number }>;
   onDockTab: (callback: (data: { sessionId: string; profileId?: string; title: string; cwd?: string }) => void) => () => void;
   onTabPoppedOut: (callback: (data: { sessionId: string }) => void) => () => void;
 }
@@ -242,7 +255,17 @@ export interface WindowApi {
   app?: {
     getShellMemory: () => Promise<{ count: number; totalMemoryMb: number; formatted: string }>;
     onNavigate: (callback: (destination: string) => void) => () => void;
+    onVisibility?: (callback: (visible: boolean) => void) => () => void;
     onToast: (callback: (data: { type: string; message: string }) => void) => () => void;
+    copyDiagnostics?: () => Promise<string>;
+    reportIssue?: (type?: 'bug' | 'feature') => Promise<{ success: boolean }>;
+    getRecentLogs?: () => Promise<import('./logTypes').LogEntry[]>;
+    getLogTail?: (maxBytes?: number, maxLines?: number) => Promise<import('./logTypes').LogEntry[]>;
+    clearRecentLogs?: () => Promise<boolean>;
+    openLogFile?: () => Promise<void>;
+    openLogFolder?: () => Promise<void>;
+    sendLog?: (entry: { level: import('./logTypes').LogLevel; message: string; details?: unknown; source?: import('./logTypes').LogSource; category?: string }) => Promise<void>;
+    onLogEntry?: (callback: (entry: import('./logTypes').LogEntry) => void) => () => void;
   };
   perf?: {
     getMainTimestamps: () => Promise<Record<string, number>>;
@@ -250,6 +273,33 @@ export interface WindowApi {
   };
   scripts?: ScriptRunnerApi;
   projectRunner?: ProjectRunnerApi;
+  aiAgents?: AiAgentsApi;
+}
+
+export interface AiAgentsApi {
+  getAll: () => Promise<import('./agentTypes').AgentWithState[]>;
+  detectAll: (args?: { force?: boolean }) => Promise<import('./agentTypes').AgentWithState[]>;
+  scanAll: (force?: boolean) => Promise<import('./agentTypes').AgentWithState[]>;
+  getPrereqs: () => Promise<import('./agentTypes').PrerequisiteItem[]>;
+  getPrerequisites: () => Promise<import('./agentTypes').PrerequisiteItem[]>;
+  addCustom: (input: any) => Promise<{ success: boolean; agent?: import('./agentTypes').AgentCatalogEntry; error?: string }>;
+  addCustomAgent: (input: import('./agentTypes').CustomAgentInput) => Promise<{ success: boolean; agent?: import('./agentTypes').AgentCatalogEntry; error?: string }>;
+  deleteCustom: (id: string) => Promise<{ success: boolean; error?: string }>;
+  deleteCustomAgent: (args: { id: string }) => Promise<{ success: boolean; error?: string }>;
+  launch: (args: import('./agentTypes').AgentLaunchRequest & { confirmedDangerous?: boolean }) => Promise<any>;
+  install: (args: { agentId: string; methodId?: string; runAsAdmin?: boolean; cwd?: string }) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+  update: (args: { agentId: string; cwd?: string }) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+  uninstall: (args: { agentId: string }) => Promise<{ success: boolean; message?: string; manualInstructions?: string; error?: string }>;
+  installPrereq: (args: { wingetId: string; name: string }) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+  installPrerequisite: (args: { id: string }) => Promise<{ success: boolean; sessionId?: string; error?: string }>;
+  addToPath: (args: { agentId?: string; dirPath?: string }) => Promise<{ success: boolean; message?: string; error?: string }>;
+  getState: (args: { agentId: string }) => Promise<{ userState: import('./agentTypes').AgentUserState; maskedEnv: Record<string, string>; encryptionAvailable: boolean }>;
+  getEnv: (agentId: string) => Promise<{ maskedEnv: Record<string, string>; isEncryptionAvailable: boolean }>;
+  saveEnv: (args: { agentId: string; env: Record<string, string> }) => Promise<{ success: boolean; error?: string }>;
+  setEnv: (args: { agentId: string; env: Record<string, string> }) => Promise<{ success: boolean; error?: string }>;
+  clearData: () => Promise<{ success: boolean }>;
+  onStatusChanged: (callback: (payload: { agentId: string; state: import('./agentTypes').AgentDetectionState }) => void) => () => void;
+  onPrereqsChanged: (callback: () => void) => () => void;
 }
 
 export interface ProjectRunnerApi {

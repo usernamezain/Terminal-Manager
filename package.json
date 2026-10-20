@@ -4,11 +4,20 @@
   "description": "Desktop Terminal Manager - Phase 1 Foundation",
   "main": "dist/main/index.js",
   "scripts": {
+    "docs:generate": "npx tsx scripts/docs-generate.ts",
+    "docs:check": "npx tsx scripts/docs-check.ts",
+    "predev": "npm run docs:generate",
+    "prebuild": "npm run docs:generate",
     "dev": "node scripts/dev.mjs",
     "start": "npx electron .",
     "build": "npx tsc && npx vite build --config vite.main.config.ts && npx vite build --config vite.preload.config.ts && npx vite build --config vite.renderer.config.ts",
     "perf": "node scripts/measurePerf.mjs",
+    "perf:bench": "npx tsx scripts/perf-bench.ts",
+    "perf:check": "npx tsx scripts/perf-check.ts",
+    "verify": "npm run docs:check && npx tsc --noEmit && npx vitest run && npm run perf:check",
     "rebuild": "npx electron-rebuild -f -w node-pty",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
     "postinstall": "npx electron-rebuild -f -w node-pty || node -e \"console.log('Skipping node-pty rebuild (Visual Studio C++ build tools not found). Using installed binary.')\""
   },
   "dependencies": {
@@ -26,6 +35,8 @@
     "codemirror": "^6.0.2",
     "framer-motion": "^12.4.7",
     "lucide-react": "^0.475.0",
+    "marked": "^18.1.1",
+    "minisearch": "^7.2.0",
     "node-pty": "^1.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -48,12 +59,30 @@
   "build": {
     "appId": "com.terminalmanager.app",
     "productName": "Terminal Manager",
+    "npmRebuild": false,
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "resources/**/*",
+      "!**/*.map",
+      "!**/__tests__/**",
+      "!**/*.test.*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/node-pty/**/*"
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
     "directories": {
       "output": "dist-release"
     },
     "win": {
       "icon": "build/icons/icon.ico",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "nsis": {
       "oneClick": false,

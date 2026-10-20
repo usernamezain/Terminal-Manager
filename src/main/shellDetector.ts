@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { execFile } from 'child_process';
 import { ShellInfo } from '../shared/types';
 import { logger } from './logger';
 
@@ -36,7 +36,57 @@ export function whichSync(cmd: string): string | null {
   return null;
 }
 
-export function detectShells(): ShellInfo[] {
+let cachedShells: ShellInfo[] | null = null;
+let isScanningWslDistros = false;
+
+function scanWslDistrosAsync(absWsl: string): void {
+  if (isScanningWslDistros) return;
+  isScanningWslDistros = true;
+
+  execFile(absWsl, ['-l', '-q'], { encoding: 'buffer', timeout: 2000 }, (error, stdout) => {
+    isScanningWslDistros = false;
+    if (error || !stdout || !cachedShells) return;
+
+    try {
+      let decoded = '';
+      if (stdout.length >= 2 && stdout[1] === 0) {
+        decoded = stdout.toString('utf16le');
+      } else {
+        decoded = stdout.toString('utf8');
+      }
+
+      const distros = decoded
+        .replace(/\0/g, '')
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.toLowerCase().includes('docker'));
+
+      let changed = false;
+      for (const distro of distros) {
+        const id = `wsl-${distro.toLowerCase()}`;
+        if (!cachedShells.some((s) => s.id === id)) {
+          cachedShells.push({
+            id,
+            name: `WSL (${distro})`,
+            path: absWsl,
+            args: ['-d', distro],
+            icon: 'linux',
+          });
+          changed = true;
+        }
+      }
+      if (changed) {
+        logger.debug('[ShellDetector] Discovered additional WSL distros asynchronously:', distros);
+      }
+    } catch {}
+  });
+}
+
+export function detectShells(forceRefresh = false): ShellInfo[] {
+  if (cachedShells && !forceRefresh) {
+    return cachedShells;
+  }
+
   const isWin = process.platform === 'win32';
   const isMac = process.platform === 'darwin';
   const shells: ShellInfo[] = [];
@@ -118,34 +168,8 @@ export function detectShells(): ShellInfo[] {
         icon: 'linux',
       });
 
-      // Query WSL distros
-      try {
-        const outputBuf = execSync(`"${absWsl}" -l -q`, { timeout: 3000 });
-        let decoded = '';
-        if (outputBuf.length >= 2 && outputBuf[1] === 0) {
-          decoded = outputBuf.toString('utf16le');
-        } else {
-          decoded = outputBuf.toString('utf8');
-        }
-
-        const distros = decoded
-          .replace(/\0/g, '')
-          .split(/\r?\n/)
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0 && !s.toLowerCase().includes('docker'));
-
-        for (const distro of distros) {
-          shells.push({
-            id: `wsl-${distro.toLowerCase()}`,
-            name: `WSL (${distro})`,
-            path: absWsl,
-            args: ['-d', distro],
-            icon: 'linux',
-          });
-        }
-      } catch (e) {
-        // wsl listing might fail if no distros installed
-      }
+      // Scan distros non-blocking asynchronously
+      scanWslDistrosAsync(absWsl);
     }
   } else if (isMac) {
     const candidates = ['/bin/zsh', '/bin/bash', '/opt/homebrew/bin/bash'];
@@ -175,5 +199,6 @@ export function detectShells(): ShellInfo[] {
   }
 
   logger.info(`Detected ${shells.length} shells on system:`, shells);
+  cachedShells = shells;
   return shells;
 }

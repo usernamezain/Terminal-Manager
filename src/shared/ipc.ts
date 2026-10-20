@@ -65,6 +65,27 @@ export const SettingsSetSchema = z.object({
       preferPwsh: z.boolean().optional(),
     })
     .optional(),
+  projectRunner: z
+    .object({
+      showPlayButton: z.boolean().optional(),
+      autoDetect: z.boolean().optional(),
+      showPrePostScripts: z.boolean().optional(),
+      defaultRunTarget: z.enum(['terminal', 'new-tab']).optional(),
+      confirmGlobalInstalls: z.boolean().optional(),
+      suggestFromInternet: z.boolean().optional(),
+      offlineMode: z.boolean().optional(),
+      enabledEcosystems: z.record(z.boolean()).optional(),
+    })
+    .optional(),
+  aiAgents: z
+    .object({
+      defaultLaunchMode: z.enum(['terminal', 'tab', 'window']).optional(),
+      showInExplorerMenu: z.boolean().optional(),
+      showInTrayMenu: z.boolean().optional(),
+      extraPathDirs: z.array(z.string()).optional(),
+      autoRescanOnStart: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const ProfileSchema = z.object({
@@ -106,6 +127,7 @@ export const IPC_CHANNELS = {
   SESSION_DOCK: 'session:dock',
   SESSION_POP_OUT: 'session:pop-out',
   SESSION_STANDALONE_CLOSE: 'session:standalone-close',
+  SESSION_CREATE_TAB: 'session:create-tab',
   SYSTEM_REGISTRY_GET_STATUS: 'system:registry-get-status',
   SYSTEM_REGISTRY_REPAIR: 'system:registry-repair',
   SETTINGS_GET: 'settings:get',
@@ -121,6 +143,7 @@ export const IPC_CHANNELS = {
   WINDOW_UNMAXIMIZE: 'window:unmaximize',
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:isMaximized',
+  WINDOW_READY: 'window:ready',
 
   // Script Runner Channels
   SCRIPTS_GET_ALL: 'scripts:get-all',
@@ -177,5 +200,31 @@ export const IPC_CHANNELS = {
   PROJECT_RUNNER_STORE_SAVE: 'project-runner:store-save',
   PROJECT_RUNNER_VALIDATE_PACKAGE: 'project-runner:validate-package',
   PROJECT_RUNNER_SEARCH_PACKAGES: 'project-runner:search-packages',
+
+  // AI Agents Channels
+  AI_AGENTS_GET_ALL: 'ai-agents:get-all',
+  AI_AGENTS_DETECT_ALL: 'ai-agents:detect-all',
+  AI_AGENTS_GET_PREREQS: 'ai-agents:get-prereqs',
+  AI_AGENTS_ADD_CUSTOM: 'ai-agents:add-custom',
+  AI_AGENTS_DELETE_CUSTOM: 'ai-agents:delete-custom',
+  AI_AGENTS_LAUNCH: 'ai-agents:launch',
+  AI_AGENTS_INSTALL: 'ai-agents:install',
+  AI_AGENTS_UPDATE: 'ai-agents:update',
+  AI_AGENTS_UNINSTALL: 'ai-agents:uninstall',
+  AI_AGENTS_INSTALL_PREREQ: 'ai-agents:install-prereq',
+  AI_AGENTS_ADD_TO_PATH: 'ai-agents:add-to-path',
+  AI_AGENTS_GET_STATE: 'ai-agents:get-state',
+  AI_AGENTS_SAVE_ENV: 'ai-agents:save-env',
+  AI_AGENTS_CLEAR_DATA: 'ai-agents:clear-data',
+
+  // Log Detector Channels
+  APP_LOG_ENTRY: 'app:log-entry',
+  APP_GET_RECENT_LOGS: 'app:get-recent-logs',
+  APP_CLEAR_RECENT_LOGS: 'app:clear-recent-logs',
+  APP_OPEN_LOG_FILE: 'app:open-log-file',
+  APP_OPEN_LOG_FOLDER: 'app:open-log-folder',
+  APP_GET_LOG_TAIL: 'app:get-log-tail',
+  APP_SEND_RENDERER_LOG: 'app:send-renderer-log',
 } as const;
+
 

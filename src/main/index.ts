@@ -20,6 +20,12 @@ import {
 import { scriptRunner } from './scripts/scriptRunner';
 import { scriptsStore } from './scripts/scriptsStore';
 import { logHop } from './launchDebugger';
+import { launchAgent } from './ai-agents/agentLauncher';
+import { agentDetector } from './ai-agents/agentDetector';
+import { updateAgentExplorerMenu } from './ai-agents/agentRegistryExplorer';
+import { getCommonWebPreferences, attachWindowSafetyNets } from './windowConfig';
+import { startupScheduler } from './startupScheduler';
+import { timerService } from './timerService';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
@@ -73,7 +79,13 @@ export function showMainWindow(): void {
   if (!mainWindow || mainWindow.isDestroyed()) {
     createWindow(true);
   } else {
-    if (!mainWindow.isVisible()) mainWindow.show();
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+      timerService.setAppVisibility(true);
+      try {
+        mainWindow.webContents.send('app:visibility', true);
+      } catch {}
+    }
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   }
@@ -147,6 +159,32 @@ function handleCliLaunch(cliArgs: ParsedCliArgs): void {
     return;
   }
 
+  // Handle AI Agent direct launch from CLI / Explorer
+  if (cliArgs.agent) {
+    const launchMode = cliArgs.mode === 'window' ? 'window' : cliArgs.mode === 'tab' ? 'tab' : 'auto';
+    launchAgent(
+      {
+        agentId: cliArgs.agent,
+        cwd: cliArgs.cwd || cliArgs.rawCwd,
+        mode: launchMode as any,
+        resume: cliArgs.resume,
+      },
+      showMainWindow
+    ).catch((err) => {
+      logger.error('[CLI Launch] Failed launching AI agent:', err);
+    });
+    return;
+  }
+
+  // Handle direct navigation to AI Agents panel
+  if (cliArgs.agentsPanel) {
+    showMainWindow();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('app:navigate', 'agents');
+    }
+    return;
+  }
+
   const hasSpecificTerminalTarget = Boolean(
     cliArgs.cwd ||
     cliArgs.rawCwd ||
@@ -182,8 +220,6 @@ function createWindow(showImmediately = true): void {
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
   const iconPath = getAppIconPath();
 
-  const preloadPath = path.join(__dirname, '../preload/index.js');
-
   // Configure CSP via Session headers safely
   session.defaultSession.webRequest.onHeadersReceived(
     { urls: ['http://*/*', 'https://*/*', 'file://*/*'] },
@@ -212,14 +248,7 @@ function createWindow(showImmediately = true): void {
     backgroundColor: '#0B0D10',
     show: false,
     icon: iconPath,
-    webPreferences: {
-      preload: preloadPath,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-      webSecurity: true,
-      spellcheck: false,
-    },
+    webPreferences: getCommonWebPreferences(),
   };
 
   if (isWin) {
@@ -244,6 +273,7 @@ function createWindow(showImmediately = true): void {
         mainWindow.focus();
         mainPerfTracker.record('readyToShow');
         mainPerfTracker.record('windowVisible');
+        startupScheduler.onFirstWindowReady();
       }
     }
   };
@@ -259,6 +289,10 @@ function createWindow(showImmediately = true): void {
       event.preventDefault();
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.hide();
+        timerService.setAppVisibility(false);
+        try {
+          mainWindow.webContents.send('app:visibility', false);
+        } catch {}
         showBackgroundNotification();
       }
     }
@@ -271,18 +305,8 @@ function createWindow(showImmediately = true): void {
     mainWindow = null;
   });
 
-  // Renderer crash & unresponsiveness logging
-  mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    logger.error(`[Render Process Gone] Reason: ${details.reason}, Exit Code: ${details.exitCode}`);
-    if (mainWindow && !mainWindow.isDestroyed() && details.reason !== 'clean-exit') {
-      logger.info('[Crash Recovery] Auto-reloading renderer process after crash...');
-      mainWindow.webContents.reload();
-    }
-  });
-
-  mainWindow.on('unresponsive', () => {
-    logger.warn('[Window Unresponsive] Main window has stopped responding.');
-  });
+  // Attach responsiveness monitoring and crash recovery
+  attachWindowSafetyNets(mainWindow, 'main');
 
   // Open DevTools in dev mode (skip in automated test)
   if (isDev && process.env.TERMINAL_MANAGER_E2E !== '1') {
@@ -304,12 +328,6 @@ function createWindow(showImmediately = true): void {
   // Setup IPC Handlers
   setupIpcHandlers(mainWindow);
 
-  // Defer non-critical startup tasks
-  setImmediate(() => {
-    cleanupObsoleteToolsData();
-    registerShellExpHandlers();
-    shellPool.scheduleRefill(50);
-  });
 
   // Load URL or File
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -343,13 +361,44 @@ app.whenReady().then(() => {
   const cliArgs = parseCliArgs(process.argv);
   const settings = settingsStore.get();
 
-  // Setup Tray and Windows JumpList
-  initTray(() => mainWindow, () => showMainWindow(), () => confirmQuit());
-  setupJumpList();
+  // Schedule deferred tasks after ready-to-show
+  startupScheduler.schedule('trayAndJumpList', 'deferred', () => {
+    initTray(() => mainWindow, () => showMainWindow(), () => confirmQuit());
+    setupJumpList();
+  });
 
-  // Unconditionally sync and rewrite Explorer context menu on every startup
-  registerExplorerContextMenu().catch((err) => {
-    logger.warn('[Startup] Context menu sync warning:', err);
+  startupScheduler.schedule('explorerContextMenu', 'deferred', async () => {
+    await registerExplorerContextMenu().catch((err) => {
+      logger.warn('[Startup] Context menu sync warning:', err);
+    });
+  });
+
+  // Schedule background idle tasks
+  startupScheduler.schedule('agentDiscovery', 'idle', async () => {
+    await agentDetector.scanAll(false).catch((err) => {
+      logger.warn('[Startup] Agent scan warning:', err);
+    });
+    await updateAgentExplorerMenu().catch((err) => {
+      logger.warn('[Startup] Agent Explorer menu sync warning:', err);
+    });
+  });
+
+  startupScheduler.schedule('cleanupAndTooling', 'idle', () => {
+    cleanupObsoleteToolsData();
+    registerShellExpHandlers();
+    shellPool.scheduleRefill(50);
+  });
+
+  startupScheduler.schedule('startupSequences', 'idle', () => {
+    try {
+      const startupSequences = scriptsStore.getAllSequences().filter((s) => s.runOnAppStart);
+      for (const seq of startupSequences) {
+        logger.info(`[Startup] Auto-executing sequence configured for app start: "${seq.name}" (${seq.id})`);
+        scriptRunner.loadSequence(seq.id, true);
+      }
+    } catch (err) {
+      logger.warn('[Startup] Failed to evaluate startup sequences:', err);
+    }
   });
 
   // Determine initial window presentation
@@ -360,7 +409,9 @@ app.whenReady().then(() => {
     cliArgs.profile ||
     cliArgs.newWindow ||
     cliArgs.dock ||
-    cliArgs.cwdNotFound
+    cliArgs.cwdNotFound ||
+    cliArgs.agent ||
+    cliArgs.agentsPanel
   );
 
   if (hasSpecificTarget) {
@@ -370,17 +421,6 @@ app.whenReady().then(() => {
   } else {
     logger.info('[Startup] Starting minimized to system tray.');
     createWindow(false);
-  }
-
-  // Check and run sequences configured to run when Terminal Manager starts
-  try {
-    const startupSequences = scriptsStore.getAllSequences().filter((s) => s.runOnAppStart);
-    for (const seq of startupSequences) {
-      logger.info(`[Startup] Auto-executing sequence configured for app start: "${seq.name}" (${seq.id})`);
-      scriptRunner.loadSequence(seq.id, true);
-    }
-  } catch (err) {
-    logger.warn('[Startup] Failed to evaluate startup sequences:', err);
   }
 
   app.on('activate', () => {

@@ -237,7 +237,19 @@ export class ScriptsStore {
         logger.info('[ScriptsStore] Initialized scripts.json with default starter scripts.');
       }
     } catch (err) {
-      logger.error('[ScriptsStore] Failed to load scripts.json:', err);
+      logger.error('[ScriptsStore] Failed to load scripts.json, backing up corrupt file:', err);
+      try {
+        if (fs.existsSync(this.scriptsFilePath)) {
+          fs.copyFileSync(this.scriptsFilePath, `${this.scriptsFilePath}.corrupt.${Date.now()}.bak`);
+        }
+      } catch {}
+      for (const s of DEFAULT_STARTER_SCRIPTS) {
+        this.scripts.set(s.id, s);
+      }
+      for (const seq of DEFAULT_STARTER_SEQUENCES) {
+        this.sequences.set(seq.id, seq);
+      }
+      this.persistScripts();
     }
   }
 
@@ -256,15 +268,25 @@ export class ScriptsStore {
       if (fs.existsSync(this.historyFilePath)) {
         const raw = fs.readFileSync(this.historyFilePath, 'utf8');
         const data = JSON.parse(raw) as HistoryData;
-        this.history = data.records || [];
+        this.history = (data.records || []).slice(0, 500);
       }
     } catch (err) {
-      logger.warn('[ScriptsStore] Failed to load script-history.json:', err);
+      logger.warn('[ScriptsStore] Failed to load script-history.json, backing up corrupt file:', err);
+      try {
+        if (fs.existsSync(this.historyFilePath)) {
+          fs.copyFileSync(this.historyFilePath, `${this.historyFilePath}.corrupt.${Date.now()}.bak`);
+        }
+      } catch {}
+      this.history = [];
+      this.persistHistory();
     }
   }
 
   private persistHistory(): void {
     if (!this.historyFilePath) return;
+    if (this.history.length > 500) {
+      this.history = this.history.slice(0, 500);
+    }
     const data: HistoryData = {
       version: 1,
       records: this.history,

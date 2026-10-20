@@ -1,0 +1,628 @@
+{
+  "schemaVersion": 1,
+  "agents": [
+    {
+      "id": "claude",
+      "name": "Claude Code",
+      "vendor": "Anthropic",
+      "description": "Agentic coding CLI tool that lives in your terminal and helps you code faster",
+      "command": "claude",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "Native Installer (PowerShell)",
+          "shell": "powershell",
+          "command": "irm https://claude.ai/install.ps1 | iex",
+          "requires": ["git"],
+          "isScriptPipe": true,
+          "source": "claude.ai",
+          "recommended": true
+        },
+        {
+          "id": "cmd-native",
+          "label": "Native Installer (Command Prompt)",
+          "shell": "cmd",
+          "command": "curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "claude.ai",
+          "recommended": false
+        },
+        {
+          "id": "winget",
+          "label": "WinGet",
+          "shell": "powershell",
+          "command": "winget install Anthropic.ClaudeCode",
+          "requires": ["winget"],
+          "isScriptPipe": false,
+          "source": "microsoft.com",
+          "recommended": false
+        },
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g @anthropic-ai/claude-code",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "claude update",
+      "uninstallHint": "Run 'npm uninstall -g @anthropic-ai/claude-code' or remove ~/.local/bin/claude",
+      "signIn": {
+        "type": "browser",
+        "instructions": "Sign in with a paid Claude account (Pro/Team) or an Anthropic Console API key",
+        "command": "claude auth login"
+      },
+      "cost": {
+        "note": "Requires paid Claude Pro/Team plan or Anthropic Console API credits",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://docs.anthropic.com/en/docs/agents-and-tools/claude-code",
+      "status": "active",
+      "windows": "native",
+      "resumeArgs": ["--resume"],
+      "knownInstallDirs": ["%USERPROFILE%\\.local\\bin"]
+    },
+    {
+      "id": "agy",
+      "name": "Antigravity CLI",
+      "vendor": "Google",
+      "description": "Autonomous AI coding assistant in your terminal with real-time reasoning and multi-tool execution",
+      "command": "agy",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Installer",
+          "shell": "powershell",
+          "command": "irm https://antigravity.google/cli/install.ps1 | iex",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "antigravity.google",
+          "recommended": true
+        },
+        {
+          "id": "cmd-native",
+          "label": "Command Prompt Installer",
+          "shell": "cmd",
+          "command": "curl -fsSL https://antigravity.google/cli/install.cmd -o install.cmd && install.cmd && del install.cmd",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "antigravity.google",
+          "recommended": false
+        },
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g @google/antigravity-cli",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "agy update",
+      "uninstallHint": "Remove %LOCALAPPDATA%\\agy\\bin or run 'npm uninstall -g @google/antigravity-cli'",
+      "signIn": {
+        "type": "browser",
+        "instructions": "Authenticate via Google OAuth in your default browser",
+        "command": "agy auth login"
+      },
+      "cost": {
+        "note": "Free tier available with daily usage limits; Google Cloud billing for higher quotas",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://antigravity.google",
+      "status": "active",
+      "windows": "native",
+      "resumeArgs": ["--resume"],
+      "knownInstallDirs": ["%LOCALAPPDATA%\\agy\\bin", "%LOCALAPPDATA%\\Google\\Antigravity\\bin"]
+    },
+    {
+      "id": "codex",
+      "name": "OpenAI Codex CLI",
+      "vendor": "OpenAI",
+      "description": "Terminal-based AI pair programmer from OpenAI with codebase indexing and sandbox execution",
+      "command": "codex",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Installer",
+          "shell": "powershell",
+          "command": "powershell -ExecutionPolicy ByPass -c \"irm https://chatgpt.com/codex/install.ps1 | iex\"",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "chatgpt.com",
+          "recommended": true
+        },
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g @openai/codex",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "npm update -g @openai/codex",
+      "uninstallHint": "Run 'npm uninstall -g @openai/codex' or remove ~/.codex/bin",
+      "signIn": {
+        "type": "browser",
+        "instructions": "Sign in with ChatGPT Plus/Team/Enterprise or provide an OpenAI API key in ~/.codex/config.toml",
+        "command": "codex login"
+      },
+      "cost": {
+        "note": "Uses ChatGPT plan allowance or OpenAI pay-per-token API credits",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://chatgpt.com/codex",
+      "status": "active",
+      "windows": "native",
+      "resumeArgs": ["resume"],
+      "knownInstallDirs": ["%USERPROFILE%\\.codex\\bin"]
+    },
+    {
+      "id": "copilot",
+      "name": "GitHub Copilot CLI",
+      "vendor": "GitHub",
+      "description": "Conversational coding assistant inside your terminal powered by GitHub Copilot models",
+      "command": "copilot",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g @github/copilot",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": true
+        },
+        {
+          "id": "winget",
+          "label": "WinGet",
+          "shell": "powershell",
+          "command": "winget install GitHub.Copilot",
+          "requires": ["winget"],
+          "isScriptPipe": false,
+          "source": "microsoft.com",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "npm update -g @github/copilot",
+      "uninstallHint": "Run 'npm uninstall -g @github/copilot' or 'winget uninstall GitHub.Copilot'",
+      "signIn": {
+        "type": "account",
+        "instructions": "Run '/login' inside Copilot to authenticate with your GitHub account",
+        "command": "copilot auth"
+      },
+      "cost": {
+        "note": "Included with GitHub Copilot subscriptions; limited monthly tier for Free accounts",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://docs.github.com/en/copilot/github-copilot-in-the-cli",
+      "status": "active",
+      "windows": "native"
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "vendor": "anomalyco",
+      "description": "Open-source terminal AI coding assistant with local and remote model support",
+      "command": "opencode",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g opencode-ai",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": true
+        },
+        {
+          "id": "scoop",
+          "label": "Scoop",
+          "shell": "powershell",
+          "command": "scoop install opencode",
+          "requires": [],
+          "isScriptPipe": false,
+          "source": "scoop.sh",
+          "recommended": false
+        },
+        {
+          "id": "choco",
+          "label": "Chocolatey",
+          "shell": "powershell",
+          "command": "choco install opencode",
+          "requires": [],
+          "isScriptPipe": false,
+          "source": "chocolatey.org",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "npm update -g opencode-ai",
+      "uninstallHint": "Run 'npm uninstall -g opencode-ai' or 'scoop uninstall opencode'",
+      "signIn": {
+        "type": "account",
+        "instructions": "Authenticate with 'opencode auth login' or use free bundled provider models",
+        "command": "opencode auth login"
+      },
+      "cost": {
+        "note": "Free bundled models available with rate limits; bring your own API keys for unlimited usage",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://opencode.ai",
+      "status": "active",
+      "windows": "native",
+      "knownInstallDirs": ["%USERPROFILE%\\.opencode\\bin"]
+    },
+    {
+      "id": "hermes",
+      "name": "Hermes Agent",
+      "vendor": "Nous Research",
+      "description": "Autonomous AI agent featuring deep multi-step reasoning, persistent memory, and local gateway support",
+      "command": "hermes",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Bootstrap",
+          "shell": "powershell",
+          "command": "iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "nousresearch.com",
+          "recommended": true
+        }
+      ],
+      "updateCommand": "hermes update",
+      "uninstallHint": "Remove %LOCALAPPDATA%\\hermes and clean user PATH entry",
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Run 'hermes setup' to choose an AI provider or 'hermes setup --portal' for Nous Portal",
+        "command": "hermes setup"
+      },
+      "cost": {
+        "note": "Bring your own provider key (OpenAI, Anthropic, OpenRouter) or use Nous Portal credits",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://hermes-agent.nousresearch.com",
+      "status": "active",
+      "windows": "native",
+      "knownInstallDirs": ["%LOCALAPPDATA%\\hermes"]
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi Code CLI",
+      "vendor": "Moonshot AI",
+      "description": "Terminal coding assistant powered by Moonshot Kimi models with long-context repository understanding",
+      "command": "kimi",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Installer",
+          "shell": "powershell",
+          "command": "irm https://code.kimi.com/kimi-code/install.ps1 | iex",
+          "requires": ["git"],
+          "isScriptPipe": true,
+          "source": "code.kimi.com",
+          "recommended": true
+        },
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g @moonshot-ai/kimi-code",
+          "requires": ["node", "npm", "git"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "npm update -g @moonshot-ai/kimi-code",
+      "uninstallHint": "Remove %USERPROFILE%\\.kimi-code or run 'npm uninstall -g @moonshot-ai/kimi-code'",
+      "signIn": {
+        "type": "account",
+        "instructions": "Run '/login' inside Kimi to sign in with Kimi OAuth or a Moonshot API key",
+        "command": "kimi auth login"
+      },
+      "cost": {
+        "note": "Requires Moonshot AI account credits or API billing",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://code.kimi.com",
+      "status": "active",
+      "windows": "native",
+      "knownInstallDirs": ["%USERPROFILE%\\.kimi-code\\bin"]
+    },
+    {
+      "id": "qwen",
+      "name": "Qwen Code",
+      "vendor": "Alibaba",
+      "description": "Terminal-based AI coding assistant optimized for Qwen 2.5 coder models with multi-turn reasoning",
+      "command": "qwen",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g @qwen-code/qwen-code@latest",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": true
+        },
+        {
+          "id": "powershell-standalone",
+          "label": "Standalone Installer",
+          "shell": "powershell",
+          "command": "irm https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen-standalone.ps1 | iex",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "aliyuncs.com",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "npm update -g @qwen-code/qwen-code@latest",
+      "uninstallHint": "Run 'npm uninstall -g @qwen-code/qwen-code'",
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Run 'qwen auth' to configure your ModelStudio API key, OpenRouter, or local Ollama endpoint",
+        "command": "qwen auth"
+      },
+      "cost": {
+        "note": "CLI is free; model API token usage is billed separately by your chosen provider",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://qwen.ai",
+      "status": "active",
+      "windows": "native"
+    },
+    {
+      "id": "aider",
+      "name": "Aider",
+      "vendor": "Paul Gauthier",
+      "description": "AI pair programming in your terminal that edits code in your git repo with automatic git commits",
+      "command": "aider",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Installer",
+          "shell": "powershell",
+          "command": "powershell -ExecutionPolicy ByPass -c \"irm https://aider.chat/install.ps1 | iex\"",
+          "requires": ["git"],
+          "isScriptPipe": true,
+          "source": "aider.chat",
+          "recommended": true
+        },
+        {
+          "id": "pip",
+          "label": "Python pip",
+          "shell": "cmd",
+          "command": "python -m pip install aider-chat",
+          "requires": ["python", "git"],
+          "isScriptPipe": false,
+          "source": "pypi.org",
+          "recommended": false
+        }
+      ],
+      "updateCommand": "python -m pip install --upgrade aider-chat",
+      "uninstallHint": "Run 'python -m pip uninstall aider-chat'",
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Set environment variables (ANTHROPIC_API_KEY, OPENAI_API_KEY, DEEPSEEK_API_KEY) or pass --api-key",
+        "command": "aider --help"
+      },
+      "cost": {
+        "note": "Free open-source CLI; bring your own API key or use local Ollama models",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://aider.chat",
+      "status": "active",
+      "windows": "native"
+    },
+    {
+      "id": "goose",
+      "name": "Goose",
+      "vendor": "Block",
+      "description": "Open-source extensible AI developer agent that automates complex engineering tasks in your workspace",
+      "command": "goose",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "gitbash-curl",
+          "label": "Official Script (Git Bash / curl)",
+          "shell": "powershell",
+          "command": "curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash",
+          "requires": ["git"],
+          "isScriptPipe": true,
+          "source": "github.com",
+          "recommended": true
+        }
+      ],
+      "updateCommand": "goose update",
+      "uninstallHint": "Remove %USERPROFILE%\\.local\\bin\\goose and ~/.config/goose",
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Run 'goose configure' to set up your LLM provider and credentials",
+        "command": "goose configure"
+      },
+      "cost": {
+        "note": "Free open-source CLI; user provides API keys for chosen provider",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://block.github.io/goose",
+      "status": "active",
+      "windows": "native"
+    },
+    {
+      "id": "kiro-cli",
+      "name": "Kiro CLI",
+      "vendor": "AWS",
+      "description": "AWS developer AI assistant in the terminal for cloud development and codebase tasks",
+      "command": "kiro-cli",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Installer",
+          "shell": "powershell",
+          "command": "irm 'https://cli.kiro.dev/install.ps1' | iex",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "kiro.dev",
+          "recommended": true
+        }
+      ],
+      "updateCommand": "kiro-cli update",
+      "uninstallHint": "Remove %LOCALAPPDATA%\\kiro-cli and clean PATH",
+      "signIn": {
+        "type": "account",
+        "instructions": "Run 'kiro-cli login' to authenticate with AWS Builder ID or IAM Identity Center",
+        "command": "kiro-cli login"
+      },
+      "cost": {
+        "note": "Free tier with AWS Builder ID; enterprise features require AWS subscription",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://kiro.dev",
+      "status": "active",
+      "windows": "native"
+    },
+    {
+      "id": "cursor-agent",
+      "name": "Cursor CLI",
+      "vendor": "Anysphere",
+      "description": "Headless command-line agent from Cursor for executing automated coding and refactoring workflows",
+      "command": "cursor-agent",
+      "altCommands": ["agent"],
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "powershell-native",
+          "label": "PowerShell Hook Installer",
+          "shell": "powershell",
+          "command": "irm 'https://cursor.com/install?win32=true' | iex",
+          "requires": [],
+          "isScriptPipe": true,
+          "source": "cursor.com",
+          "recommended": true
+        }
+      ],
+      "signIn": {
+        "type": "account",
+        "instructions": "Authenticate with your Cursor account credentials",
+        "command": "cursor-agent login"
+      },
+      "cost": {
+        "note": "Requires active Cursor Pro or Business account",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://cursor.com",
+      "status": "unverified",
+      "windows": "native"
+    },
+    {
+      "id": "cline",
+      "name": "Cline CLI",
+      "vendor": "Cline",
+      "description": "Autonomous coding agent in the terminal with full tool access, file manipulation, and Kanban support",
+      "command": "cline",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "npm",
+          "label": "npm (Global)",
+          "shell": "powershell",
+          "command": "npm install -g cline",
+          "requires": ["node", "npm"],
+          "isScriptPipe": false,
+          "source": "npmjs.com",
+          "recommended": true
+        }
+      ],
+      "updateCommand": "npm update -g cline",
+      "uninstallHint": "Run 'npm uninstall -g cline'",
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Configure your provider API keys directly within the interactive session",
+        "command": "cline"
+      },
+      "cost": {
+        "note": "Free open-source CLI; bring your own API key (Anthropic, OpenRouter, OpenAI, etc.)",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://cline.bot",
+      "status": "active",
+      "windows": "native"
+    },
+    {
+      "id": "openhands",
+      "name": "OpenHands CLI",
+      "vendor": "OpenHands",
+      "description": "Platform for autonomous software development agents running in isolated container environments",
+      "command": "openhands",
+      "versionArgs": ["--version"],
+      "installMethods": [
+        {
+          "id": "wsl-uv",
+          "label": "WSL (uv tool)",
+          "shell": "powershell",
+          "command": "wsl -d Ubuntu -e bash -c \"uv tool install openhands --python 3.12\"",
+          "requires": ["wsl"],
+          "isScriptPipe": false,
+          "source": "openhands.dev",
+          "recommended": true
+        }
+      ],
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Configure LLM provider API keys during first run setup",
+        "command": "openhands serve"
+      },
+      "cost": {
+        "note": "Free open-source framework; user provides LLM API keys",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://openhands.dev",
+      "status": "active",
+      "windows": "wsl-only"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini CLI",
+      "vendor": "Google (Legacy)",
+      "description": "Legacy Google Gemini developer command-line interface",
+      "command": "gemini",
+      "versionArgs": ["--version"],
+      "installMethods": [],
+      "signIn": {
+        "type": "apikey",
+        "instructions": "Works with Google Cloud Enterprise or developer API keys",
+        "command": "gemini auth"
+      },
+      "cost": {
+        "note": "Google stopped serving personal accounts on June 18, 2026. Still works with an API key or enterprise account.",
+        "verifiedOn": "2026-10-13"
+      },
+      "docsUrl": "https://ai.google.dev",
+      "status": "legacy",
+      "windows": "native"
+    }
+  ]
+}

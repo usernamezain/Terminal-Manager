@@ -39,6 +39,11 @@ export class ProfilesStore {
       }
     } catch (err) {
       logger.error('Failed to load profiles file, generating defaults', err);
+      try {
+        if (fs.existsSync(this.filePath)) {
+          fs.copyFileSync(this.filePath, `${this.filePath}.corrupt.${Date.now()}.bak`);
+        }
+      } catch {}
     }
 
     // First run or corrupt file: generate from detected shells

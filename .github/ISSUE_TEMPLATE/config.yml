@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/mughaldev0/Terminal-Manager/discussions
+    about: Ask questions, share configuration ideas, or discuss features with the community.
+  - name: Security Vulnerability Report
+    url: https://github.com/mughaldev0/Terminal-Manager/security/advisories/new
+    about: Report sensitive security vulnerabilities privately.

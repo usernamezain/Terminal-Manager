@@ -217,9 +217,10 @@ export class SessionManager {
       TERM: 'xterm-256color',
       ...shellExpEnvExtra,
       ...profileEnv,
+      ...(args.env || {}),
     } as { [key: string]: string };
 
-    const sessionTitle = profile?.name || (shellPath ? path.basename(shellPath, path.extname(shellPath)) : 'Terminal');
+    const sessionTitle = args.title || profile?.name || (shellPath ? path.basename(shellPath, path.extname(shellPath)) : 'Terminal');
 
     logger.info(
       `Spawning Session [${id}]: shell='${shellPath}', args=${JSON.stringify(shellArgs)}, cwd='${cwd}', cols=${args.cols}, rows=${args.rows}`
@@ -502,6 +503,10 @@ export class SessionManager {
     return pids;
   }
 
+  public getSession(sessionId: string): TerminalSession | undefined {
+    return this.sessions.get(sessionId);
+  }
+
   public getDetails(sessionId: string): any {
     const s = this.sessions.get(sessionId);
     if (!s) return null;
@@ -550,7 +555,8 @@ export class SessionManager {
 
     if (process.platform === 'win32') {
       try {
-        execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'pipe' });
+        const { execFileSync } = require('child_process');
+        execFileSync('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'pipe' });
         return true;
       } catch (err: any) {
         logger.warn(`Taskkill warning for PID ${pid}: ${err.message}`);
@@ -577,6 +583,12 @@ export class SessionManager {
 
     if (session.batchTimer) {
       clearTimeout(session.batchTimer);
+      session.batchTimer = null;
+    }
+    session.ringBuffer.clear();
+    session.batchBuffer = [];
+    if (session.attachedWindowId) {
+      windowManager.detachSession(session.attachedWindowId, id);
     }
     this.sessions.delete(id);
   }

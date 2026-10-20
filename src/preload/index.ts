@@ -87,6 +87,7 @@ const api: WindowApi = {
     unmaximize: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_UNMAXIMIZE),
     close: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_CLOSE),
     isMaximized: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_IS_MAXIMIZED),
+    ready: () => ipcRenderer.invoke(IPC_CHANNELS.WINDOW_READY),
   },
   session: {
     attach: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_ATTACH, { sessionId }),
@@ -96,6 +97,8 @@ const api: WindowApi = {
     popOut: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_POP_OUT, { sessionId }),
     closeStandalone: (sessionId: string, action: 'dock' | 'background' | 'terminate') =>
       ipcRenderer.invoke(IPC_CHANNELS.SESSION_STANDALONE_CLOSE, { sessionId, action }),
+    createTab: (cwd?: string, command?: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SESSION_CREATE_TAB, { cwd, command }),
     getDetails: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_DETAILS, { sessionId }),
     getProcesses: (sessionId: string) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_PROCESSES, { sessionId }),
     killProcessTree: (pid: number) => ipcRenderer.invoke(IPC_CHANNELS.SESSION_KILL_PROCESS_TREE, { pid }),
@@ -141,11 +144,34 @@ const api: WindowApi = {
         ipcRenderer.removeListener('app:navigate', listener);
       };
     },
+    onVisibility: (callback: (visible: boolean) => void) => {
+      const listener = (_event: unknown, visible: boolean) => callback(visible);
+      ipcRenderer.on('app:visibility', listener);
+      return () => {
+        ipcRenderer.removeListener('app:visibility', listener);
+      };
+    },
     onToast: (callback: (data: { type: string; message: string }) => void) => {
       const listener = (_event: unknown, payload: { type: string; message: string }) => callback(payload);
       ipcRenderer.on('toast:show', listener);
       return () => {
         ipcRenderer.removeListener('toast:show', listener);
+      };
+    },
+    copyDiagnostics: () => ipcRenderer.invoke('app:copy-diagnostics'),
+    reportIssue: (type?: 'bug' | 'feature') => ipcRenderer.invoke('app:report-issue', { type }),
+    getRecentLogs: () => ipcRenderer.invoke(IPC_CHANNELS.APP_GET_RECENT_LOGS),
+    getLogTail: (maxBytes?: number, maxLines?: number) =>
+      ipcRenderer.invoke(IPC_CHANNELS.APP_GET_LOG_TAIL, { maxBytes, maxLines }),
+    clearRecentLogs: () => ipcRenderer.invoke(IPC_CHANNELS.APP_CLEAR_RECENT_LOGS),
+    openLogFile: () => ipcRenderer.invoke(IPC_CHANNELS.APP_OPEN_LOG_FILE),
+    openLogFolder: () => ipcRenderer.invoke(IPC_CHANNELS.APP_OPEN_LOG_FOLDER),
+    sendLog: (entry: any) => ipcRenderer.invoke(IPC_CHANNELS.APP_SEND_RENDERER_LOG, entry),
+    onLogEntry: (callback: (entry: any) => void) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on(IPC_CHANNELS.APP_LOG_ENTRY, listener);
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.APP_LOG_ENTRY, listener);
       };
     },
   },
@@ -212,6 +238,52 @@ const api: WindowApi = {
       ipcRenderer.on('project-runner:changed', listener);
       return () => {
         ipcRenderer.removeListener('project-runner:changed', listener);
+      };
+    },
+  },
+  aiAgents: {
+    getAll: () => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_GET_ALL),
+    detectAll: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_DETECT_ALL, args),
+    scanAll: (force) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_DETECT_ALL, { force }),
+    getPrereqs: () => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_GET_PREREQS),
+    getPrerequisites: () => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_GET_PREREQS),
+    addCustom: (input) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_ADD_CUSTOM, input),
+    addCustomAgent: (input) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_ADD_CUSTOM, input),
+    deleteCustom: (id) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_DELETE_CUSTOM, { id }),
+    deleteCustomAgent: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_DELETE_CUSTOM, args),
+    launch: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_LAUNCH, args),
+    install: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_INSTALL, args),
+    update: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_UPDATE, args),
+    uninstall: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_UNINSTALL, args),
+    installPrereq: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_INSTALL_PREREQ, args),
+    installPrerequisite: (args) => {
+      // Find wingetId or default name
+      return ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_INSTALL_PREREQ, {
+        wingetId: args.id === 'node' ? 'OpenJS.NodeJS.LTS' : args.id === 'git' ? 'Git.Git' : args.id === 'python' ? 'Python.Python.3.12' : args.id === 'uv' ? 'astral-sh.uv' : args.id,
+        name: args.id,
+      });
+    },
+    addToPath: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_ADD_TO_PATH, args),
+    getState: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_GET_STATE, args),
+    getEnv: async (agentId) => {
+      const res = await ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_GET_STATE, { agentId });
+      return { maskedEnv: res.maskedEnv, isEncryptionAvailable: res.encryptionAvailable };
+    },
+    saveEnv: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_SAVE_ENV, args),
+    setEnv: (args) => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_SAVE_ENV, args),
+    clearData: () => ipcRenderer.invoke(IPC_CHANNELS.AI_AGENTS_CLEAR_DATA),
+    onStatusChanged: (callback) => {
+      const listener = (_event: unknown, payload: any) => callback(payload);
+      ipcRenderer.on('ai-agents:status-changed', listener);
+      return () => {
+        ipcRenderer.removeListener('ai-agents:status-changed', listener);
+      };
+    },
+    onPrereqsChanged: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('ai-agents:prereqs-changed', listener);
+      return () => {
+        ipcRenderer.removeListener('ai-agents:prereqs-changed', listener);
       };
     },
   },

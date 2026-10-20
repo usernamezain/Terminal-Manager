@@ -29,6 +29,18 @@ const SAFE_VERSION_PATTERN = /^[a-zA-Z0-9^~=<>.*+\-_@]+$/;
 const INJECTION_CHARS_PATTERN = /[\s;&|`$<>"'\\]/;
 
 /**
+ * Validates version specifiers (e.g. "^18.2.0", "==2.1.0", "~1.0.0")
+ */
+export function validateVersion(version: string): { valid: boolean; error?: string } {
+  if (!version || !version.trim()) return { valid: true };
+  const trimmed = version.trim();
+  if (!SAFE_VERSION_PATTERN.test(trimmed)) {
+    return { valid: false, error: `Version "${trimmed}" contains illegal or unsafe characters.` };
+  }
+  return { valid: true };
+}
+
+/**
  * Validates a single package specifier (e.g. "react" or "react@^18.2.0")
  */
 export function validateSinglePackage(
@@ -38,7 +50,7 @@ export function validateSinglePackage(
   allowAdvanced: boolean = false
 ): PackageValidationResult {
   const trimmedName = rawName.trim();
-  const trimmedVersion = rawVersion?.trim();
+  const trimmedVersion = typeof rawVersion === 'string' ? rawVersion.trim() : undefined;
 
   if (!trimmedName) {
     return { valid: false, error: 'Package name cannot be empty.' };
@@ -54,10 +66,11 @@ export function validateSinglePackage(
 
   // Version validation if supplied
   if (trimmedVersion) {
-    if (!SAFE_VERSION_PATTERN.test(trimmedVersion)) {
+    const vRes = validateVersion(trimmedVersion);
+    if (!vRes.valid) {
       return {
         valid: false,
-        error: `Version "${trimmedVersion}" contains illegal or unsafe characters.`,
+        error: vRes.error,
       };
     }
   }
@@ -106,7 +119,19 @@ export function validatePackageInput(
     return { valid: false, packages: [], error: 'Package name cannot be empty.' };
   }
 
-  // Split by comma or whitespace
+  // Reject newlines or forbidden shell injection characters
+  const forbiddenRegex = allowAdvanced
+    ? /[\r\n;&|`$<>"']/
+    : /[\r\n;&|`$<>"'\\]/;
+  if (forbiddenRegex.test(input)) {
+    return {
+      valid: false,
+      packages: [],
+      error: 'Package input contains illegal characters (shell operators, newlines, or quotes).',
+    };
+  }
+
+  // Split by comma or whitespace (horizontal spaces only now)
   const tokens = input
     .split(/[,\s]+/)
     .map((s) => s.trim())

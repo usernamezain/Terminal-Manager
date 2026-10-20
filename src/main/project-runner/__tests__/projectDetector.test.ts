@@ -233,4 +233,87 @@ describe('Project Runner Detectors & Walk-up Tests', () => {
     expect(projInfo?.name).toBe('root-pkg');
     expect(projInfo?.rootPath).toBe(tempDir);
   });
+
+  it('detects .NET, Java pom.xml/gradlew, PHP composer.json, and Ruby Gemfile', () => {
+    fs.writeFileSync(path.join(tempDir, 'MyApp.csproj'), '<Project Sdk="Microsoft.NET.Sdk"></Project>', 'utf8');
+    fs.writeFileSync(path.join(tempDir, 'pom.xml'), '<project></project>', 'utf8');
+    fs.writeFileSync(path.join(tempDir, 'composer.json'), JSON.stringify({ scripts: { test: 'phpunit' } }), 'utf8');
+    fs.writeFileSync(path.join(tempDir, 'Gemfile'), 'source "https://rubygems.org"\n', 'utf8');
+
+    const tools = { dotnet: true, mvn: true, composer: true, bundle: true, rake: true };
+    const ecosystems = detectOtherEcosystems(tempDir, tools);
+
+    const types = ecosystems.map((e) => e.type);
+    expect(types).toContain('dotnet');
+    expect(types).toContain('java');
+    expect(types).toContain('php');
+    expect(types).toContain('ruby');
+
+    const dotnetEco = ecosystems.find((e) => e.type === 'dotnet');
+    expect(dotnetEco?.groups.some((g) => g.commands.some((c) => c.commandText === 'dotnet run'))).toBe(true);
+  });
+
+  it('detects Python pyproject.toml with uv or poetry', () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'pyproject.toml'),
+      '[tool.poetry]\nname = "poetry-app"\n[tool.poetry.scripts]\nserve = "app:serve"\n',
+      'utf8'
+    );
+    fs.writeFileSync(path.join(tempDir, 'poetry.lock'), '', 'utf8');
+
+    const tools = { poetry: true, python: true, pip: true };
+    const res = detectPythonProject(tempDir, tools, 'cmd');
+
+    expect(res.ecosystem?.tool).toBe('poetry');
+    const runGroup = res.ecosystem?.groups.find((g) => g.title === 'Run');
+    const serveCmd = runGroup?.commands.find((c) => c.label === 'serve');
+    expect(serveCmd?.commandText).toBe('poetry run serve');
+  });
+
+  it('handles folder with spaces, ampersands, and unicode characters', () => {
+    const specialFolder = path.join(tempDir, 'Special & Cool 🚀 Project');
+    fs.mkdirSync(specialFolder, { recursive: true });
+    fs.writeFileSync(
+      path.join(specialFolder, 'package.json'),
+      JSON.stringify({ name: 'special-app', scripts: { start: 'node main.js' } }),
+      'utf8'
+    );
+
+    const proj = detectProject(specialFolder, 'powershell', undefined, true);
+    expect(proj).toBeDefined();
+    expect(proj?.name).toBe('special-app');
+    expect(proj?.rootPath).toBe(specialFolder);
+  });
+
+  it('hides pre/post scripts unless showPrePostScripts is enabled', () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'package.json'),
+      JSON.stringify({
+        name: 'lifecycle-app',
+        scripts: {
+          prebuild: 'echo pre',
+          build: 'tsc',
+          postbuild: 'echo post',
+        },
+      }),
+      'utf8'
+    );
+
+    const tools = { npm: true };
+    const resDefault = detectNodeProject(tempDir, tools, { showPrePostScripts: false });
+    const scriptLabelsDefault = resDefault.ecosystem?.groups
+      .find((g) => g.title === 'Scripts')
+      ?.commands.map((c) => c.label);
+    expect(scriptLabelsDefault).toContain('build');
+    expect(scriptLabelsDefault).not.toContain('prebuild');
+    expect(scriptLabelsDefault).not.toContain('postbuild');
+
+    const resWithLifecycle = detectNodeProject(tempDir, tools, { showPrePostScripts: true });
+    const scriptLabelsWith = resWithLifecycle.ecosystem?.groups
+      .find((g) => g.title === 'Scripts')
+      ?.commands.map((c) => c.label);
+    expect(scriptLabelsWith).toContain('build');
+    expect(scriptLabelsWith).toContain('prebuild');
+    expect(scriptLabelsWith).toContain('postbuild');
+  });
 });

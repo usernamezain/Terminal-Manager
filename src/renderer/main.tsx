@@ -23,7 +23,8 @@ if (!window.api) {
 } else {
   rendererPerfTracker.mark('rendererFirstPaint');
 
-  const searchParams = new URLSearchParams(window.location.search);
+  const rawSearch = (window.location.search || '').replace(/^\?+/, '');
+  const searchParams = new URLSearchParams(rawSearch);
   const isStandalone = searchParams.get('mode') === 'standalone';
   const standaloneSessionId = searchParams.get('sessionId') || '';
 

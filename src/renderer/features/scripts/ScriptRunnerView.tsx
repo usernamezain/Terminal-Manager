@@ -6,6 +6,7 @@ import { ScriptEditor } from './ScriptEditor';
 import { QueueView } from './QueueView';
 import { HistoryView } from './HistoryView';
 import { InterpretersModal } from './InterpretersModal';
+import { useWorkspaceStore } from '../../store/useWorkspaceStore';
 import styles from './ScriptRunnerView.module.css';
 
 export const ScriptRunnerView: React.FC = () => {
@@ -109,7 +110,23 @@ export const ScriptRunnerView: React.FC = () => {
             </div>
           </div>
 
-          <div className={styles.headerActions}>
+          <div className={styles.headerActions} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => useWorkspaceStore.getState().openDocs('script-runner')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent)',
+                fontSize: 12,
+                cursor: 'pointer',
+                padding: '4px 8px',
+                textDecoration: 'underline',
+              }}
+              title="Read Script Runner documentation"
+            >
+              Learn more
+            </button>
             {activeSubSection === 'editor' && activeScript && (
               <button
                 type="button"

@@ -1,185 +1,199 @@
-# CONTEXT.md — Terminal Manager Architecture & Technical Reference
+# CONTEXT.md — Terminal Manager Architectural Map & Developer Guide
 
-This document serves as the canonical technical reference for developers, contributors, and AI agents working on **Terminal Manager**.
-
----
-
-## 1. System Philosophy & Non-Negotiable Rules
-
-1. **Terminal Data NEVER Passes Through React or Zustand**:
-   - PTY output streams (`pty:data`) flow directly from the Electron main process via strictly-typed IPC into the `@xterm/xterm` buffer via `term.write()`.
-   - React components only manage container DOM mounts, tab strips, headers, and modal views. Passing raw terminal streams through React state triggers catastrophic garbage collection and UI latency.
-
-2. **Strict Backpressure Flow Control**:
-   - High-throughput processes (`cat large.log`, `npm install`, compile dumps) must not overwhelm renderer memory.
-   - High watermark: **512 KB** (`524,288 bytes`) $\rightarrow$ main process calls `ptyProcess.pause()`.
-   - Low watermark: **128 KB** (`131,072 bytes`) $\rightarrow$ main process calls `ptyProcess.resume()`.
-   - The renderer acknowledges processed chunks via `window.api.pty.ack(sessionId, byteLength)`.
-
-3. **Pristine System Isolation**:
-   - Never overwrite or corrupt the user's host PowerShell profile (`$PROFILE`).
-   - PowerShell sessions spawn in app-scoped mode (`-NoProfile -Command ". '<userData>\shell\Microsoft.PowerShell_profile.ps1'"`).
-   - If the user explicitly syncs their system profile, the `systemProfileManager` creates unique, append-only timestamped backups before applying changes.
-
-4. **Zero Keystroke Injection into Standard Input**:
-   - Never inject arbitrary text or synthetic commands into `ptyProcess.write()` on startup (e.g. attempting to probe CWD or environment).
-   - Injecting keystrokes during shell initialization causes `PSReadLine` cursor position out-of-range crashes (`System.ArgumentOutOfRangeException`).
-   - CWD and environment variables are configured strictly through `node-pty` spawn options.
-
-5. **Single-Instance Enforcement & Instant Hand-Off**:
-   - The application acquires a single-instance lock (`app.requestSingleInstanceLock()`).
-   - Secondary processes forward their command-line arguments to the primary instance via the `second-instance` event and exit immediately (`process.exit(0)`).
+This document is the canonical system map and developer guide for **Terminal Manager**. It maps the entire codebase, process boundaries, data flows, persistence models, design conventions, security hardening, diagnostics system, and open-source contribution workflows.
+For high-level project behavioral rules and agent prompts, refer to [AGENT.md](AGENT.md).
+For community contribution workflows, refer to [HOW-TO-CONTRIBUTE.md](HOW-TO-CONTRIBUTE.md).
 
 ---
 
-## 2. Technology Stack
+## 1. Product Summary & Tech Stack
 
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Runtime** | Electron (Latest Stable) | Desktop wrapper, multi-window management, native integration |
-| **Build Tooling** | Vite 6 + TypeScript (Strict) | Sub-second HMR for renderer; targeted bundling for main/preload |
-| **UI Framework** | React 19 | Declarative UI for tabs, sidebar, script runner, and settings |
-| **Terminal Core** | `@xterm/xterm` (v5.5+) | High-performance virtual terminal emulator |
-| **Acceleration** | `@xterm/addon-webgl` | Hardware-accelerated GPU character rendering |
-| **PTY Backend** | `node-pty` (ConPTY on Windows) | Real Windows Pseudo Console process host |
-| **State Management**| **Zustand** | UI layout tree, active tabs, settings cache, profiles cache |
-| **Code Editor** | **CodeMirror 6** | Built-in code editor for Script Runner with syntax highlighting |
-| **IPC Validation** | **Zod** | Runtime contract verification on all IPC channels |
-| **Icons & Style** | `lucide-react` + CSS Modules | Pure CSS variables (`tokens.css`), 60fps animations via Framer Motion |
+Terminal Manager is a hardware-accelerated Windows desktop terminal and developer automation workspace.
+
+| Component | Technology | Version | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Desktop Shell** | Electron | 34.2.0 | Window management, system tray, DWM backdrop composition |
+| **UI Framework** | React | 19.0.0 | Declarative UI, tabs, settings, documentation, and split layouts |
+| **Bundler & Tooling** | Vite | 6.1.0 | Fast HMR dev server and multi-target compilation |
+| **Language** | TypeScript | 5.7.3 | Strict static type safety across main, preload, and renderer |
+| **Terminal Canvas** | `@xterm/xterm` | 5.5.0 | Virtual terminal emulator |
+| **Acceleration** | `@xterm/addon-webgl` | 0.18.0 | Hardware-accelerated GPU character rendering |
+| **PTY Host** | `node-pty` | 1.0.0 | ConPTY (Windows Pseudoconsole) process host |
+| **State Management**| Zustand | 5.0.3 | Reactive UI store for tabs, panes, active view, and settings |
+| **Search Engine** | MiniSearch | 7.2.0 | In-app documentation full-text search indexing |
+| **Markdown Parser** | Marked | 18.1.1 | Frontmatter and markdown rendering for docs view |
+| **Code Editor** | CodeMirror | 6.0.2 | In-app code editor for Script Runner |
+| **IPC Validation** | Zod | 3.24.2 | Runtime schema validation on all incoming IPC payloads |
+| **Test Runner** | Vitest | 4.1.11 | Fast unit and integration test runner (149+ tests) |
 
 ---
 
-## 3. Architecture & Process Boundaries
+## 2. Directory & Module Map
+
+```text
+c:\Users\SHABBIR TRADERS\Desktop\CUstomized-Terminal
+├── .github/                         # GitHub community health, workflows & templates
+│   ├── ISSUE_TEMPLATE/              # Structured YAML issue forms (bug, feature, docs, perf)
+│   ├── PULL_REQUEST_TEMPLATE.md     # PR checklist and verification requirements
+│   ├── DISCUSSION_TEMPLATE/         # GitHub Discussions templates (ideas, Q&A)
+│   └── workflows/                   # Automated GitHub Actions CI, release, and triage
+├── build/                           # Application build resources, installers and icons
+├── docs/                            # Documentation single source of truth
+│   ├── _inventory.md                # Code-verified user feature inventory
+│   ├── content/                     # 19 numbered markdown topic guides
+│   │   └── _generated/              # Build-time generated reference guides
+│   │       ├── 13-keyboard-shortcuts.md
+│   │       └── 14-settings-reference.md
+│   ├── maintainers/                 # Maintainer triage, release, and settings guides
+│   └── perf/                        # Repeatable benchmark baseline and results
+├── resources/
+│   └── agents.catalog.json          # Catalog definition for 15 AI CLI agents
+├── scripts/
+│   ├── dev.mjs                      # Development server bootstrap
+│   ├── docs-generate.ts             # Pre-build docs generator (shortcuts & settings)
+│   ├── docs-check.ts                # Documentation integrity validator
+│   ├── perf-bench.ts                # Automated 12-scenario benchmark suite
+│   ├── perf-check.ts                # Performance budget enforcement check
+│   └── generateIcons.mjs            # Application icon generator
+├── src/
+│   ├── helper/                      # Architectural seam for future UAC helper
+│   ├── main/                        # Electron Main Process (Node.js)
+│   │   ├── index.ts                 # App lifecycle, single instance lock, window creation
+│   │   ├── cliHandler.ts            # CLI argv parsing, flags, and second-instance routing
+│   │   ├── startupScheduler.ts      # Prioritized startup queue (critical > deferred > idle)
+│   │   ├── timerService.ts          # Background interval throttling when windows hidden
+│   │   ├── diagnosticsManager.ts    # Redacted system diagnostics and log exporter
+│   │   ├── windowConfig.ts          # Window safety nets, sandbox flags, URL scheme validator
+│   │   ├── sessionManager.ts        # ConPTY lifecycle, backpressure (512K/128K), process kill
+│   │   ├── standaloneWindowManager.ts# Pop-out standalone window creation and docking
+│   │   ├── trayManager.ts           # Windows notification area tray and Jump List
+│   │   ├── registryIntegration.ts   # Explorer context menu in HKCU with escaped quotes
+│   │   ├── settingsStore.ts         # Atomic JSON persistence for user preferences
+│   │   ├── profilesStore.ts         # Shell profiles store and default resolution
+│   │   ├── snippetsStore.ts         # Snippet library persistence
+│   │   ├── shellDetector.ts         # Non-blocking auto-detection for pwsh, cmd, wsl
+│   │   ├── perfTracker.ts           # Hardware timestamp telemetry recorder
+│   │   ├── ai-agents/               # AI agent detectors, installers, DPAPI encrypted secrets
+│   │   ├── project-runner/          # Read-only ecosystem detectors for 10 project types
+│   │   ├── script-runner/           # Multi-interpreter FIFO execution queue and logs
+│   │   └── shell-experience/        # Oh My Posh themes, PSReadLine colors, Fast Start cache
+│   ├── preload/                     # Electron Preload Bridge
+│   │   └── index.ts                 # Context-isolated window.api with sender-based window resolution
+│   ├── renderer/                    # React 19 Renderer Process
+│   │   ├── index.html               # Entry HTML with Content Security Policy (CSP)
+│   │   ├── main.tsx                 # React DOM mount point
+│   │   ├── app/                     # Shell container layout (TitleBar, Sidebar, App.tsx)
+│   │   ├── components/              # Shared UI components (StatusBar, TitleBar, SettingsModal)
+│   │   │   └── settings/            # SettingsView, SettingsRow, SettingsSection, SettingsHeader
+│   │   ├── design/                  # Design tokens (tokens.css) and global variables
+│   │   ├── store/                   # Global Zustand stores (useWorkspaceStore, useSettingsStore)
+│   │   └── features/                # Domain-specific feature modules
+│   │       ├── ai-agents/           # AgentsView, installation modals, secret manager
+│   │       ├── docs/                # CustomizationDocsView, markdownParser, docsSearch, docsLoader
+│   │       ├── layout/              # PaneContainer, split layout trees, drag dividers
+│   │       ├── profiles/            # ProfilesView and profile editor
+│   │       ├── project-runner/      # ProjectRunnerBar, ProjectRunnerMenu, AddPackageModal
+│   │       ├── scripts/             # ScriptRunnerView, QueueView, HistoryView, ScriptEditor
+│   │       ├── shell-experience/    # ShellExperienceSettingsView, SyntaxColors, PromptGallery
+│   │       ├── standalone/          # StandaloneWindowView for popped-out sessions
+│   │       ├── tabs/                # TabStrip, TabItem, tab color tagging
+│   │       ├── terminal/            # TerminalInstance, WebGL renderer pool, TerminalRegistry
+│   │       └── terminal-actions/    # TerminalContextMenu, ActionsPanel, MultiLinePasteModal
+│   └── shared/                      # Shared TypeScript Interfaces & Contracts
+│       ├── types.ts                 # Core settings, profiles, window API contracts
+│       ├── ipc.ts                   # Zod schemas and IPC channel constants
+│       ├── keybindingsRegistry.ts   # Centralized shortcut registry with metadata
+│       ├── settingsMetadata.ts      # Centralized settings schema with UI locations
+│       ├── agentTypes.ts            # AI agent catalog schemas
+│       ├── projectRunnerTypes.ts    # Project runner commands and ecosystem models
+│       ├── scriptRunnerTypes.ts     # Script runner models, queues, and policies
+│       └── shellExperienceTypes.ts  # Shell experience, syntax color, and prompt types
+```
+
+---
+
+## 3. Process Architecture & Invariants
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        ELECTRON MAIN PROCESS                           │
 │                                                                        │
-│  ┌───────────────────────┐  ┌─────────────────┐  ┌──────────────────┐  │
-│  │ Single-Instance Lock  │  │ CLI Parser      │  │ Registry Manager │  │
-│  │ & Second-Instance IPC │  │ (cliHandler.ts) │  │ (Windows HKCU)   │  │
-│  └───────────┬───────────┘  └────────┬────────┘  └────────┬─────────┘  │
-│              │                       │                    │            │
-│              ▼                       ▼                    ▼            │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ SessionManager (PTY Lifecycle, Backpressure Ring Buffer, ConPTY) │  │
-│  └───────────┬──────────────────────────────────────────┬───────────┘  │
-│              │                                          │              │
-│              ▼                                          ▼              │
-│  ┌───────────────────────┐                  ┌───────────────────────┐  │
-│  │ Main Window (#1)      │                  │ Standalone Window (#N)│  │
-│  │ (Tabs, Layout, Rails) │                  │ (Frameless, Dockable) │  │
-│  └───────────────────────┘                  └───────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
-                                     │ ContextBridge (Preload)
-                                     ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                       ELECTRON RENDERER PROCESS                        │
-│                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ Window API (window.api.pty, window.api.session, window.api.app)  │  │
-│  └───────────────────────────────────┬──────────────────────────────┘  │
-│                                      │                                 │
-│         ┌────────────────────────────┼────────────────────────────┐    │
-│         ▼                            ▼                            ▼    │
-│  ┌──────────────┐             ┌──────────────┐             ┌────────┐  │
-│  │ Layout Engine│             │ xterm.js WebGL│            │ Views  │  │
-│  │ (Tabs/Panes) │             │ (Direct PTY) │             │ Docs,  │  │
-│  │ Zustand Store│             │ Backpressure │             │ Runner │  │
-│  └──────────────┘             └──────────────┘             └────────┘  │
+│  ┌─────────────────────────┐  ┌─────────────────────────────────────┐  │
+│  │   SessionManager        │  │       StartupScheduler              │  │
+│  │  - ConPTY Process Host  │  │  - Critical: Window show            │  │
+│  │  - Shell Buffer Streams │  │  - Deferred: Tray, HKCU Registry    │  │
+│  │  - Backpressure Control │  │  - Idle: Agent scans, Warm Shells   │  │
+│  └────────────▲────────────┘  └─────────────────────────────────────┘  │
+│               │ IPC                                                    │
+│  ┌────────────▼────────────┐  ┌─────────────────────────────────────┐  │
+│  │   WindowManager         │  │       DiagnosticsManager            │  │
+│  │  - Main Window          │  │  - Privacy Redaction (%USERPROFILE%)│  │
+│  │  - Standalone Windows   │  │  - Safe JSON settings snapshot      │  │
+│  │  - Sender Resolution    │  │  - Redacted Log Tail (last 100)     │  │
+│  └────────────▲────────────┘  └─────────────────────────────────────┘  │
+└───────────────┼────────────────────────────────────────────────────────┘
+                │ IPC via Context-Isolated Preload Bridge (window.api)
+┌───────────────┼────────────────────────────────────────────────────────┐
+│               ▼                                                        │
+│  ┌─────────────────────────┐  ┌─────────────────────────────────────┐  │
+│  │   Main Workspace View   │  │    Standalone Detached Views        │  │
+│  │  - React 19 UI Strip    │  │  - Dedicated xterm.js instance      │  │
+│  │  - TabStrip & Split Panes│ │  - Direct ConPTY stream binding     │  │
+│  │  - Lazy-loaded Panels   │  │  - Re-docking back into workspace   │  │
+│  └─────────────────────────┘  └─────────────────────────────────────┘  │
+│                      REACT 19 RENDERER PROCESS                         │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 4. Key Subsystems & Lifecycle Flows
-
-### A. Windows Explorer Launch ("Open in Terminal Manager")
-1. **Trigger**: User right-clicks a folder, file, drive root, or directory background in Windows Explorer.
-2. **Registry Command**:
-   `"path\to\electron.exe" "path\to\app" --cwd="%V"`
-3. **Primary / Secondary Instance Routing**:
-   - If app is not running: Starts cold-start, parses `--cwd`, creates a session, and launches either a standalone window or main window tab based on preferences.
-   - If app is running: Secondary process captures `argv`, detects lock denial, calls `process.exit(0)`. Primary process receives `second-instance`, normalizes path, and presents the terminal.
-4. **Path Sanitization**:
-   - Escaped quotes from Windows shell (`C:\"` $\rightarrow$ `C:"`) are stripped.
-   - Drive roots (`C:`) are automatically restored with trailing backslashes (`C:\`).
-
-### B. Standalone Terminal Window & Re-Docking
-1. A folder terminal can launch in an independent, frameless 860x540 window managed by `standaloneWindowManager.ts`.
-2. When the user clicks **"Dock to main window"**:
-   - `sessionManager.attach(sessionId, mainWindow)` switches the event listener.
-   - The standalone window smoothly closes.
-   - The main window receives `session:dock-tab` and creates a new tab seamlessly.
-   - **Process Continuity**: PTY PID, running processes, and scrollback history remain intact.
-
-### C. Script Runner & Sequential Execution
-1. Scripts are stored atomically in `scripts.json` inside `userData`.
-2. Execution is managed via `scriptRunner.ts`:
-   - Enqueued items wait in FIFO order.
-   - The active script spawns under its designated interpreter with arguments and custom CWD.
-   - Stderr and stdout are multiplexed with ANSI escape codes and pushed to `scripts:output`.
-   - Configurable timeout terminates the process tree using `terminateProcessTree(pid)`.
-   - On completion, `onFailure` policy (`stop` vs. `continue`) decides whether to halt or advance.
-
-### D. Shell Experience Generator
-1. Generates `CTTcustom.ps1` dynamically inside `<userData>\shell\`.
-2. Uses atomic write: writes to temporary file then renames to prevent partial reads.
-3. Implements the `Set-PredictionSource_Override` execution hook, ensuring PSReadLine color themes (17 syntax slots), Oh My Posh themes, and Terminal-Icons load cleanly.
+### Invariants:
+1. **Sessions Belong to Main**: PTY processes live in the main process (`sessionManager.ts`). A window closing or popping out never kills background shell executions.
+2. **Dynamic Window Resolution**: Handlers resolve target windows from `BrowserWindow.fromWebContents(event.sender)`. Storing a single global `mainWindow` is strictly forbidden.
+3. **CWD Resolution Precedence**:
+   `Explicit CLI / Context Menu CWD > Profile Default CWD > User Home Directory`.
+4. **Current User Registry Only**:
+   Explorer verbs and auto-start registries only touch `HKCU`. Writing to `HKLM` or requiring administrator elevation is forbidden.
+5. **Atomic Storage**:
+   Settings and profiles are written via write-temp-and-rename with automatic `.corrupt.<timestamp>.bak` recovery.
 
 ---
 
-## 5. Directory Layout
+## 4. Diagnostics & Privacy Guarantees
 
-```text
-/
-├── .agent/                    # Agent skills directory
-│   └── skills/                # Project-specific advanced skills
-├── .agents/                   # Standard customization root
-│   └── skills/                # Project-specific advanced skills
-├── src/
-│   ├── main/                  # Node.js / Electron main process
-│   │   ├── index.ts           # App lifecycle, single-instance lock, window initialization
-│   │   ├── cliHandler.ts      # Command-line argument parsing & normalization
-│   │   ├── launchManager.ts   # Central launch coordinator (CWD precedence & window mode)
-│   │   ├── sessionManager.ts  # node-pty lifecycle, backpressure, process tree termination
-│   │   ├── standaloneWindowManager.ts # Frameless standalone windows & docking logic
-│   │   ├── registryIntegration.ts     # Windows Explorer context menu registration
-│   │   ├── profilesStore.ts   # System shell auto-detection & custom profiles
-│   │   ├── settingsStore.ts   # Atomic settings persistence
-│   │   ├── scripts/           # Script runner queue & state machine
-│   │   └── shell-experience/  # PowerShell customization generator & backup manager
-│   ├── preload/               # Context isolation bridge (exposes window.api)
-│   ├── shared/                # Shared contracts, IPC schemas, and constants
-│   └── renderer/              # React 19 + xterm.js renderer
-│       ├── app/               # Layout shell (TitleBar, Sidebar, TabStrip, StatusBar)
-│       ├── features/
-│       │   ├── terminal/      # Terminal view, xterm WebGL instance, backpressure ACK
-│       │   ├── profiles/      # Profiles editor & shell configurator
-│       │   ├── scripts/       # Script runner library, CodeMirror editor, and queue
-│       │   ├── docs/          # In-app interactive documentation hub
-│       │   ├── standalone/    # Standalone terminal view with dock button
-│       │   └── shell-experience/ # Oh My Posh gallery, syntax colors, keybindings
-│       └── store/             # Zustand stores (useWorkspaceStore, useSettingsStore, etc.)
-```
+The `DiagnosticsManager` (`src/main/diagnosticsManager.ts`) provides safe system troubleshooting:
+- Strips all absolute home directory paths (`C:\Users\username\...`) with `%USERPROFILE%`.
+- Replaces raw usernames with `%USERNAME%`.
+- Replaces API keys, tokens, and authorization headers (`ghp_*`, `sk-*`, `bearer`, `auth=`) with `[REDACTED_SECRET]`.
+- Exports modified settings keys only (values are omitted to protect secrets).
+- Captures recent sanitized log entries for one-click bug filing.
 
 ---
 
-## 6. Build, Test, and Packaging Commands
+## 5. Automated CI Verification & Pre-Merge Gates
+
+**Zero-Regression Principle: Merges will be checked on behalf of the work.**
+No pull request will be merged into `main` without passing the complete verification gate:
 
 ```bash
-# Start development environment
-npm run dev
-
-# Rebuild native modules (node-pty) for Electron
-npm run rebuild
-
-# Run Vitest acceptance and unit tests (59 tests)
-npx vitest run
-
-# Run targeted test file
-npx vitest run src/main/__tests__/cliHandler.test.ts
-
-# Production build (Typecheck + Vite Main + Vite Preload + Vite Renderer)
-npm run build
+npm run verify
 ```
+
+This runs:
+1. `npm run docs:check`: Validates markdown frontmatter, anchor links, and settings schema synchronization.
+2. `npx tsc --noEmit`: Full strict TypeScript compile across all 3 build targets.
+3. `npx vitest run`: 149 unit and integration tests passing at 100%.
+4. `npm run perf:check`: Verifies bundle size, memory footprint, and latency limits against `perf-budgets.json`.
+
+---
+
+## 6. Open-Source Community & Contribution Resources
+
+- **Contribution Guide**: [HOW-TO-CONTRIBUTE.md](HOW-TO-CONTRIBUTE.md)
+- **Contributing Overview**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- **Security Policy**: [SECURITY.md](SECURITY.md)
+- **Support Guidelines**: [SUPPORT.md](SUPPORT.md)
+- **Issue Templates**: `.github/ISSUE_TEMPLATE/`
+- **Pull Request Template**: `.github/PULL_REQUEST_TEMPLATE.md`
+- **Maintainer Triage Guide**: `docs/maintainers/TRIAGE.md`
+- **Release Procedures**: `docs/maintainers/RELEASING.md`
+- **Repository Settings**: `docs/maintainers/REPO_SETTINGS.md`

@@ -1,0 +1,21 @@
+title: "[Idea]: "
+labels: ["idea", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for Terminal Manager? Share your thoughts with the community!
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea Description
+      description: What is your idea and what problem does it solve?
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: User Experience & Workflow
+      description: How would a developer interact with this feature?
+    validations:
+      required: false

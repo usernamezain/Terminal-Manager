@@ -1,11 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Sliders, Activity } from 'lucide-react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { Sliders, Activity, HelpCircle } from 'lucide-react';
 import { useSettingsStore } from '@renderer/store/useSettingsStore';
 import { SettingsHeader } from './SettingsHeader';
 import { SettingsSection } from './SettingsSection';
 import { SettingsRow } from './SettingsRow';
-import { ShellExperienceSettingsView, ShellExperienceSubTab } from '../../features/shell-experience/ShellExperienceSettingsView';
+import type { ShellExperienceSubTab } from '../../features/shell-experience/ShellExperienceSettingsView';
+
+const ShellExperienceSettingsView = lazy(() =>
+  import('../../features/shell-experience/ShellExperienceSettingsView').then((m) => ({
+    default: m.ShellExperienceSettingsView,
+  }))
+);
 import { ThemeName, WindowMaterial, AnimationLevel, UiDensity, CursorStyle, RightClickAction } from '@shared/types';
+import { useProjectRunnerStore } from '@renderer/features/project-runner/useProjectRunnerStore';
+import { EcosystemType } from '@shared/projectRunnerTypes';
+import { useWorkspaceStore } from '@renderer/store/useWorkspaceStore';
 import styles from './SettingsLayout.module.css';
 
 export type SettingsSectionId =
@@ -18,7 +27,8 @@ export type SettingsSectionId =
   | 'shellexp-keybindings'
   | 'shellexp-commands'
   | 'shellexp-advanced'
-  | 'perf';
+  | 'perf'
+  | 'help';
 
 interface SettingsViewProps {
   initialSection?: string;
@@ -33,6 +43,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [currentSection, setCurrentSection] = useState<SettingsSectionId>(() => {
     if (initialSection === 'shellexp') return 'shellexp-overview';
     if (initialSection === 'perf') return 'perf';
+    if (initialSection === 'help') return 'help';
     if (initialSection.startsWith('shellexp-')) return initialSection as SettingsSectionId;
     return 'general';
   });
@@ -40,6 +51,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [perfData, setPerfData] = useState<any>(null);
   const [registryStatus, setRegistryStatus] = useState<boolean | null>(null);
   const [isRepairing, setIsRepairing] = useState<boolean>(false);
+  const [helpNotice, setHelpNotice] = useState<string | null>(null);
 
   // Fetch registry status on mount
   useEffect(() => {
@@ -119,6 +131,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         title="Settings"
         subtitle={getSectionTitle()}
         onClose={onClose}
+        onLearnMore={() => {
+          onClose();
+          const target = currentSection.startsWith('shellexp-')
+            ? 'shell-experience'
+            : currentSection === 'perf'
+            ? 'performance'
+            : 'appearance-and-themes';
+          useWorkspaceStore.getState().openDocs(target);
+        }}
       />
 
       <div className={styles.layoutBody}>
@@ -229,8 +250,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
 
           <div className={styles.navGroupTitle} style={{ marginTop: 12 }}>
-            Diagnostics
+            Help & Diagnostics
           </div>
+          <button
+            type="button"
+            className={`${styles.navItem} ${currentSection === 'help' ? styles.navItemActive : ''}`}
+            onClick={() => setCurrentSection('help')}
+          >
+            <div className={styles.navItemContent}>
+              <HelpCircle size={14} />
+              <span>Help & Support</span>
+            </div>
+          </button>
           <button
             type="button"
             className={`${styles.navItem} ${currentSection === 'perf' ? styles.navItemActive : ''}`}
@@ -251,6 +282,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <SettingsSection
                   title="Theme & Appearance"
                   description="Customize the color palette, background materials, and animation smoothness."
+                  action={
+                    <button
+                      type="button"
+                      className={styles.learnMoreLink}
+                      onClick={() => {
+                        onClose();
+                        useWorkspaceStore.getState().openDocs('appearance-and-themes');
+                      }}
+                    >
+                      Learn more
+                    </button>
+                  }
                 >
                   <SettingsRow
                     label="Theme Palette"
@@ -515,6 +558,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       {[
                         { id: 'group-clipboard', label: 'Clipboard (Copy, Paste, History)' },
                         { id: 'group-selection', label: 'Selection Actions (Paths, URLs, Ports)' },
+                        { id: 'group-project', label: 'Project Runner (Detected project scripts & actions)' },
+                        { id: 'group-ai-agents', label: 'AI Agents (Quick launch installed CLI agents)' },
                         { id: 'group-quick', label: 'Quick Commands (Clear, Reset, Interrupt)' },
                         { id: 'group-saved', label: 'Snippets & Script Runner' },
                         { id: 'group-window', label: 'Window & Session (Splits, Tabs, Export)' },
@@ -552,6 +597,429 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                   </SettingsRow>
                 </SettingsSection>
+
+                {(() => {
+                  const prSettings = {
+                    showPlayButton: true,
+                    autoDetect: true,
+                    showPrePostScripts: false,
+                    defaultRunTarget: 'terminal' as const,
+                    confirmGlobalInstalls: true,
+                    suggestFromInternet: true,
+                    offlineMode: false,
+                    enabledEcosystems: {
+                      node: true,
+                      python: true,
+                      rust: true,
+                      go: true,
+                      dotnet: true,
+                      java: true,
+                      php: true,
+                      ruby: true,
+                      docker: true,
+                      generic: true,
+                    },
+                    ...(settings.projectRunner || {}),
+                  };
+
+                  return (
+                    <SettingsSection
+                      title="Project Runner"
+                      description="Auto-detect project tools (Node, Python, Rust, Go, etc.) and launch scripts, dependencies, and environment tasks."
+                    >
+                      <SettingsRow
+                        label="Show Project Runner button"
+                        description="Display the Play button strip at the bottom of terminal panes when a project is detected."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            prSettings.showPlayButton ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                showPlayButton: !prSettings.showPlayButton,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Auto-detect on folder change"
+                        description="Automatically re-scan manifest files whenever the terminal changes directory."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            prSettings.autoDetect ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                autoDetect: !prSettings.autoDetect,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Show pre/post scripts"
+                        description="Include pre- and post-lifecycle scripts (e.g., prebuild, posttest) in package.json script menus."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            prSettings.showPrePostScripts ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                showPrePostScripts: !prSettings.showPrePostScripts,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Default run target"
+                        description="Where project commands execute when clicked normally."
+                      >
+                        <select
+                          className={styles.controlSelect}
+                          value={prSettings.defaultRunTarget || 'terminal'}
+                          onChange={(e) =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                defaultRunTarget: e.target.value as 'terminal' | 'new-tab',
+                              },
+                            })
+                          }
+                        >
+                          <option value="terminal">This terminal</option>
+                          <option value="new-tab">New tab</option>
+                        </select>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Confirm global installs"
+                        description="Display a warning before executing global package installations (e.g., npm -g or pip outside a virtual environment)."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            prSettings.confirmGlobalInstalls ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                confirmGlobalInstalls: !prSettings.confirmGlobalInstalls,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Package suggestions from internet"
+                        description="Fetch suggestions and version metadata from npm and PyPI registries (offline fallback is always enabled)."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            prSettings.suggestFromInternet ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                suggestFromInternet: !prSettings.suggestFromInternet,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Offline mode"
+                        description="Disable all outbound network calls for package search and metadata lookups."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            prSettings.offlineMode ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              projectRunner: {
+                                ...prSettings,
+                                offlineMode: !prSettings.offlineMode,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Clear saved project data"
+                        description="Remove all remembered primary, recent, and pinned commands across projects."
+                      >
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          onClick={async () => {
+                            await useProjectRunnerStore.getState().clearSavedData();
+                            alert('Saved project data cleared.');
+                          }}
+                        >
+                          Clear Data
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Enabled ecosystems"
+                        description="Select which project types to detect and show in the Project Runner."
+                      >
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', width: '100%' }}>
+                          {[
+                            { id: 'node', label: 'Node.js / Deno / Bun' },
+                            { id: 'python', label: 'Python (pip / uv / poetry)' },
+                            { id: 'rust', label: 'Rust (Cargo)' },
+                            { id: 'go', label: 'Go' },
+                            { id: 'dotnet', label: '.NET (C# / F#)' },
+                            { id: 'java', label: 'Java / Kotlin (Maven / Gradle)' },
+                            { id: 'php', label: 'PHP (Composer)' },
+                            { id: 'ruby', label: 'Ruby (Bundler / Rails)' },
+                            { id: 'docker', label: 'Docker / Compose' },
+                            { id: 'generic', label: 'Make / Just / Taskfile' },
+                          ].map((eco) => {
+                            const isEnabled = prSettings.enabledEcosystems?.[eco.id as EcosystemType] !== false;
+                            return (
+                              <label
+                                key={eco.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  color: 'var(--text-primary)',
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isEnabled}
+                                  onChange={(e) => {
+                                    const updatedEco = {
+                                      ...(prSettings.enabledEcosystems || {}),
+                                      [eco.id]: e.target.checked,
+                                    };
+                                    updateSettings({
+                                      projectRunner: {
+                                        ...prSettings,
+                                        enabledEcosystems: updatedEco as any,
+                                      },
+                                    });
+                                  }}
+                                  style={{ cursor: 'pointer', accentColor: 'var(--accent-primary, #89b4fa)' }}
+                                />
+                                <span>{eco.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </SettingsRow>
+                    </SettingsSection>
+                  );
+                })()}
+
+                {(() => {
+                  const agentSettings = {
+                    defaultLaunchMode: 'tab' as const,
+                    showInExplorerMenu: true,
+                    showInTrayMenu: true,
+                    confirmScriptInstallers: true,
+                    extraScanDirs: [],
+                    autoRescanOnStart: true,
+                    ...(settings.aiAgents || {}),
+                  };
+
+                  return (
+                    <SettingsSection
+                      title="AI Agents"
+                      description="Configure detection, Windows integrations, and quick-launch preferences for AI CLI agents."
+                    >
+                      <SettingsRow
+                        label="Default launch mode"
+                        description="Preferred presentation target when launching an AI agent from shortcuts or context menus."
+                      >
+                        <select
+                          className={styles.controlSelect}
+                          value={agentSettings.defaultLaunchMode}
+                          onChange={(e) =>
+                            updateSettings({
+                              aiAgents: {
+                                ...agentSettings,
+                                defaultLaunchMode: e.target.value as any,
+                              },
+                            })
+                          }
+                        >
+                          <option value="terminal">This terminal</option>
+                          <option value="tab">New tab</option>
+                          <option value="window">Standalone window</option>
+                        </select>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Show AI Agents in Explorer menu"
+                        description="Add an 'AI Agents (Terminal Manager)' cascading submenu when right-clicking folders or drive backgrounds in Windows Explorer."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            agentSettings.showInExplorerMenu ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              aiAgents: {
+                                ...agentSettings,
+                                showInExplorerMenu: !agentSettings.showInExplorerMenu,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Show in tray menu"
+                        description="List installed AI agents and recent folders in the Windows notification area tray context menu."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            agentSettings.showInTrayMenu ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              aiAgents: {
+                                ...agentSettings,
+                                showInTrayMenu: !agentSettings.showInTrayMenu,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Confirm script installers"
+                        description="Always require explicit confirmation before running irm|iex or curl|sh installer scripts."
+                      >
+                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                          Always enabled (enforced)
+                        </span>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Auto rescan on app start"
+                        description="Probe system PATH and known developer locations for newly installed agents when Terminal Manager starts."
+                      >
+                        <button
+                          type="button"
+                          className={`${styles.controlToggle} ${
+                            agentSettings.autoRescanOnStart ? styles.controlToggleActive : ''
+                          }`}
+                          onClick={() =>
+                            updateSettings({
+                              aiAgents: {
+                                ...agentSettings,
+                                autoRescanOnStart: !agentSettings.autoRescanOnStart,
+                              },
+                            })
+                          }
+                        >
+                          <span className={styles.controlToggleThumb} />
+                        </button>
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Extra PATH directories to scan"
+                        description="Custom folders searched during agent binary detection (one path per line)."
+                      >
+                        <textarea
+                          style={{
+                            width: '100%',
+                            minHeight: '60px',
+                            backgroundColor: 'var(--bg-base)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: '4px',
+                            padding: '6px 8px',
+                            fontSize: '12px',
+                            fontFamily: 'monospace',
+                            outline: 'none',
+                          }}
+                          placeholder="C:\tools\bin&#10;D:\agents"
+                          value={(agentSettings.extraPathDirs || []).join('\n')}
+                          onChange={(e) => {
+                            const dirs = e.target.value
+                              .split('\n')
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            updateSettings({
+                              aiAgents: {
+                                ...agentSettings,
+                                extraPathDirs: dirs,
+                              },
+                            });
+                          }}
+                        />
+                      </SettingsRow>
+
+                      <SettingsRow
+                        label="Clear agent data"
+                        description="Clear recent folders and encrypted environment variables stored for all agents."
+                      >
+                        <button
+                          type="button"
+                          className={styles.actionBtn}
+                          onClick={async () => {
+                            if (confirm('Clear all AI Agent recent folders and saved secrets?')) {
+                              await window.api?.aiAgents?.clearData?.();
+                              alert('AI Agent user state cleared.');
+                            }
+                          }}
+                        >
+                          Clear Data
+                        </button>
+                      </SettingsRow>
+                    </SettingsSection>
+                  );
+                })()}
 
                 <SettingsSection
                   title="System Integration"
@@ -775,9 +1243,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             )}
 
             {currentSection.startsWith('shellexp-') && (
-              <ShellExperienceSettingsView
-                subSection={currentSection.replace('shellexp-', '') as ShellExperienceSubTab}
-              />
+              <Suspense fallback={<div style={{ padding: 24, color: 'var(--text-muted)' }}>Loading Shell Experience...</div>}>
+                <ShellExperienceSettingsView
+                  subSection={currentSection.replace('shellexp-', '') as ShellExperienceSubTab}
+                />
+              </Suspense>
             )}
 
             {currentSection === 'perf' && (
@@ -785,6 +1255,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <SettingsSection
                   title="Startup Timeline Markers"
                   description="Hardware timestamps captured from main and preload initialization."
+                  action={
+                    <button
+                      type="button"
+                      className={styles.learnMoreLink}
+                      onClick={() => {
+                        onClose();
+                        useWorkspaceStore.getState().openDocs('performance');
+                      }}
+                    >
+                      Learn more
+                    </button>
+                  }
                 >
                   <pre
                     style={{
@@ -825,6 +1307,128 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                       {perfData?.shellMemory?.formatted || '0 MB'}
                     </span>
+                  </SettingsRow>
+                </SettingsSection>
+              </>
+            )}
+
+            {currentSection === 'help' && (
+              <>
+                <SettingsSection
+                  title="Help & Support"
+                  description="Troubleshoot issues, inspect diagnostic metadata, or report bugs to maintainers."
+                >
+                  <SettingsRow
+                    label="Documentation Guides"
+                    description="Browse all 19 offline documentation topics and customization guides."
+                  >
+                    <button
+                      type="button"
+                      className={styles.controlSecondaryButton}
+                      onClick={() => {
+                        onClose();
+                        useWorkspaceStore.getState().openDocs('01-getting-started');
+                      }}
+                    >
+                      Open Documentation (F1)
+                    </button>
+                  </SettingsRow>
+
+                  <SettingsRow
+                    label="Copy System Diagnostics"
+                    description="Generates a redacted diagnostics report (no secrets or typed commands) and copies it to clipboard."
+                  >
+                    <button
+                      type="button"
+                      className={styles.controlSecondaryButton}
+                      onClick={async () => {
+                        try {
+                          const diag = await window.api?.app?.copyDiagnostics?.();
+                          if (diag) {
+                            await navigator.clipboard.writeText(diag);
+                            setHelpNotice('Redacted diagnostics copied to clipboard!');
+                            setTimeout(() => setHelpNotice(null), 3500);
+                          }
+                        } catch {}
+                      }}
+                    >
+                      Copy Diagnostics
+                    </button>
+                  </SettingsRow>
+
+                  <SettingsRow
+                    label="Report an Issue"
+                    description="Copies diagnostics and opens GitHub with prefilled environment info."
+                  >
+                    <button
+                      type="button"
+                      className={styles.controlPrimaryButton}
+                      onClick={async () => {
+                        try {
+                          const diag = await window.api?.app?.copyDiagnostics?.();
+                          if (diag) {
+                            await navigator.clipboard.writeText(diag);
+                          }
+                          await window.api?.app?.reportIssue?.('bug');
+                          setHelpNotice('Diagnostics copied! Paste into the GitHub issue description.');
+                          setTimeout(() => setHelpNotice(null), 5000);
+                        } catch {}
+                      }}
+                    >
+                      Report an Issue
+                    </button>
+                  </SettingsRow>
+
+                  <SettingsRow
+                    label="Request a Feature"
+                    description="Suggest a capability or enhancement on GitHub."
+                  >
+                    <button
+                      type="button"
+                      className={styles.controlSecondaryButton}
+                      onClick={async () => {
+                        await window.api?.app?.reportIssue?.('feature');
+                      }}
+                    >
+                      Request a Feature
+                    </button>
+                  </SettingsRow>
+
+                  <SettingsRow
+                    label="Open Application Logs"
+                    description="Open the local folder where application logs and traces are stored."
+                  >
+                    <button
+                      type="button"
+                      className={styles.controlSecondaryButton}
+                      onClick={() => window.api?.app?.openLogFolder?.()}
+                    >
+                      Open Logs Folder
+                    </button>
+                  </SettingsRow>
+                </SettingsSection>
+
+                {helpNotice && (
+                  <div style={{ padding: 12, borderRadius: 6, background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', color: 'var(--accent)', fontSize: 13, marginBottom: 16 }}>
+                    {helpNotice}
+                  </div>
+                )}
+
+                <SettingsSection
+                  title="About Terminal Manager"
+                  description="System versions, runtime engines, and license information."
+                >
+                  <SettingsRow label="App Version" description="Current installed application release">
+                    <span style={{ fontWeight: 600 }}>0.1.0</span>
+                  </SettingsRow>
+                  <SettingsRow label="Desktop Shell" description="Electron & Chromium runtime">
+                    <span>Electron 34.2.0 (Chromium 134)</span>
+                  </SettingsRow>
+                  <SettingsRow label="Node Runtime" description="Internal Node.js process runtime">
+                    <span>Node.js v20.18.3</span>
+                  </SettingsRow>
+                  <SettingsRow label="License" description="Open-source software license">
+                    <span>MIT License</span>
                   </SettingsRow>
                 </SettingsSection>
               </>

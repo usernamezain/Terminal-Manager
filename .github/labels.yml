@@ -1,0 +1,55 @@
+- name: bug
+  color: d73a4a
+  description: Something isn't working as expected
+
+- name: enhancement
+  color: a2eeef
+  description: New feature or enhancement request
+
+- name: documentation
+  color: 0075ca
+  description: Improvements or additions to documentation
+
+- name: performance
+  color: d4c5f9
+  description: Latency, CPU, memory, or throughput improvements
+
+- name: security
+  color: e11d21
+  description: Vulnerabilities, sandboxing, and security boundaries
+
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers to the project
+
+- name: help wanted
+  color: 008672
+  description: Extra attention or community assistance needed
+
+- name: needs-triage
+  color: fbefff
+  description: New issue awaiting maintainer review
+
+- name: area/terminal
+  color: 1d76db
+  description: xterm.js, WebGL renderer, ConPTY, and shell emulation
+
+- name: area/ui
+  color: 5319e7
+  description: React 19 UI, tabstrip, panes, dialogs, and tokens
+
+- name: area/main
+  color: 0e8a16
+  description: Electron main process, window management, and sessionManager
+
+- name: area/ai-agents
+  color: b60205
+  description: AI CLI agents hub, detection, and secrets
+
+- name: area/project-runner
+  color: f9d0c4
+  description: Read-only ecosystem detection and script commands
+
+- name: area/script-runner
+  color: e99695
+  description: Automated FIFO script runner, editor, and history

@@ -29,6 +29,8 @@ import { useClipboardHistoryStore } from './clipboardHistoryStore';
 import { useShellIntegrationStore } from './shellIntegrationStore';
 import { useSnippetsStore } from './useSnippetsStore';
 import { useScriptsStore } from '@renderer/features/scripts/useScriptsStore';
+import { useProjectRunnerStore } from '@renderer/features/project-runner/useProjectRunnerStore';
+import { ProjectCommand, EcosystemType } from '@shared/projectRunnerTypes';
 import { Snippet } from '@shared/snippetTypes';
 import { SessionDetails, ProcessInfo } from '@shared/types';
 import {
@@ -78,6 +80,9 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
   const { scripts, addToQueue } = useScriptsStore();
   const { history: clipboardHistory, clearHistory: clearClipboardHistory } = useClipboardHistoryStore();
   const shellStore = useShellIntegrationStore();
+  const project = useProjectRunnerStore((state) => state.projects[sessionId]);
+  const runProjectCommand = useProjectRunnerStore((state) => state.runCommand);
+  const openAddPackage = useProjectRunnerStore((state) => state.openAddPackage);
 
   const [historyScope, setHistoryScope] = useState<'session' | 'all'>('session');
 
@@ -101,6 +106,7 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
 
   // Collapsed sections
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    project: false,
     quickActions: false,
     snippets: initialSection === 'snippets' ? false : false,
     scripts: false,
@@ -312,7 +318,8 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
   const isActionsOnly = rawQuery.startsWith('>');
   const isSnippetsOnly = rawQuery.startsWith('@');
   const isScriptsOnly = rawQuery.startsWith('#');
-  const cleanQuery = isActionsOnly || isSnippetsOnly || isScriptsOnly
+  const isProjectOnly = rawQuery.startsWith('%');
+  const cleanQuery = isActionsOnly || isSnippetsOnly || isScriptsOnly || isProjectOnly
     ? rawQuery.slice(1).trim().toLowerCase()
     : rawQuery.toLowerCase();
 
@@ -517,11 +524,41 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
   }, [scripts, cleanQuery, isActionsOnly, isSnippetsOnly]);
 
   const filteredHistory = useMemo(() => {
-    if (isActionsOnly || isSnippetsOnly || isScriptsOnly) return [];
+    if (isActionsOnly || isSnippetsOnly || isScriptsOnly || isProjectOnly) return [];
     const list = commandHistory;
     if (!cleanQuery) return list;
     return list.filter((c) => c.command.toLowerCase().includes(cleanQuery));
-  }, [commandHistory, cleanQuery, isActionsOnly, isSnippetsOnly, isScriptsOnly]);
+  }, [commandHistory, cleanQuery, isActionsOnly, isSnippetsOnly, isScriptsOnly, isProjectOnly]);
+
+  const projectCommands = useMemo(() => {
+    if (!project) return [];
+    const list: (ProjectCommand & { ecoType: EcosystemType })[] = [];
+    for (const eco of project.ecosystems) {
+      for (const grp of eco.groups) {
+        for (const cmd of grp.commands) {
+          list.push({ ...cmd, ecoType: eco.type });
+        }
+        if (grp.subgroups) {
+          for (const sub of grp.subgroups) {
+            for (const cmd of sub.commands) {
+              list.push({ ...cmd, ecoType: eco.type });
+            }
+          }
+        }
+      }
+    }
+    return list;
+  }, [project]);
+
+  const filteredProjectCommands = useMemo(() => {
+    if (isActionsOnly || isSnippetsOnly || isScriptsOnly) return [];
+    if (!cleanQuery) return projectCommands;
+    return projectCommands.filter(
+      (c) =>
+        c.label.toLowerCase().includes(cleanQuery) ||
+        c.commandText.toLowerCase().includes(cleanQuery)
+    );
+  }, [projectCommands, cleanQuery, isActionsOnly, isSnippetsOnly, isScriptsOnly]);
 
   const filteredEnv = useMemo(() => {
     if (!sessionDetails?.env) return [];
@@ -648,12 +685,95 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
         <span className={styles.searchHintTag} onClick={() => setSearchQuery('# ')}>
           # Scripts
         </span>
+        {project && (
+          <span className={styles.searchHintTag} onClick={() => setSearchQuery('% ')}>
+            % Project
+          </span>
+        )}
       </div>
 
       {/* Scrollable Container */}
       <div className={styles.contentScroll}>
+        {/* Project Runner Section (if detected for this session's folder) */}
+        {project && (!isActionsOnly && !isSnippetsOnly && !isScriptsOnly) && (
+          <div className={styles.section}>
+            <button
+              type="button"
+              className={styles.sectionHeader}
+              onClick={() => toggleSection('project')}
+            >
+              <div className={styles.sectionHeaderLeft}>
+                {collapsedSections.project ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                <span>Project ({project.name})</span>
+              </div>
+              <div className={styles.sectionHeaderRight}>
+                {project.ecosystems[0] && (
+                  <span className={styles.sectionBadge}>{project.ecosystems[0].tool}</span>
+                )}
+                <span className={styles.sectionCount}>{filteredProjectCommands.length}</span>
+              </div>
+            </button>
+
+            {!collapsedSections.project && (
+              <div className={styles.sectionBody}>
+                {filteredProjectCommands.length === 0 ? (
+                  <div className={styles.emptyState}>No project commands matching search.</div>
+                ) : (
+                  filteredProjectCommands.map((cmd) => (
+                    <div
+                      key={cmd.id}
+                      className={`${styles.listRow} ${cmd.disabled || sessionEnded ? styles.listRowDisabled : ''}`}
+                    >
+                      <div className={styles.listRowLeft}>
+                        <Play size={14} className={styles.rowIcon} />
+                        <div className={styles.rowTextGroup}>
+                          <span className={styles.rowTitle}>{cmd.label}</span>
+                          <span className={styles.rowSubtitle}>{cmd.commandText}</span>
+                        </div>
+                      </div>
+                      <div className={styles.listRowRight}>
+                        {cmd.disabledReason ? (
+                          <span className={styles.disabledReason} title={cmd.disabledReason}>
+                            {cmd.disabledReason}
+                          </span>
+                        ) : cmd.category === 'package' && (cmd.id.includes('add-package') || cmd.id.includes('add-dev-package')) ? (
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => {
+                              const isDev = cmd.id.includes('dev');
+                              openAddPackage(sessionId, project.rootPath, cmd.ecoType, isDev);
+                              handleActionTriggered();
+                            }}
+                            title="Add package"
+                          >
+                            <span>Add...</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className={styles.actionBtn}
+                            onClick={() => {
+                              runProjectCommand(sessionId, cmd, 'terminal', project.cwd);
+                              handleActionTriggered();
+                            }}
+                            title={`Run: ${cmd.commandText}`}
+                          >
+                            <Play size={10} />
+                            <span>Run</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 1. Quick Actions */}
-        {(!isSnippetsOnly && !isScriptsOnly) && (
+        {(!isSnippetsOnly && !isScriptsOnly && !isProjectOnly) && (
           <div className={styles.section}>
             <button
               type="button"
@@ -699,7 +819,7 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
         )}
 
         {/* 2. Snippets */}
-        {(!isActionsOnly && !isScriptsOnly) && (
+        {(!isActionsOnly && !isScriptsOnly && !isProjectOnly) && (
           <div className={styles.section}>
             <button
               type="button"
@@ -801,7 +921,7 @@ export const ActionsPanel: React.FC<ActionsPanelProps> = ({
         )}
 
         {/* 3. Scripts and Sequences */}
-        {(!isActionsOnly && !isSnippetsOnly) && (
+        {(!isActionsOnly && !isSnippetsOnly && !isProjectOnly) && (
           <div className={styles.section}>
             <button
               type="button"

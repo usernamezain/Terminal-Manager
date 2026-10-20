@@ -3,6 +3,7 @@ import { TitleBar } from '@renderer/components/TitleBar';
 import { Sidebar } from '@renderer/components/Sidebar';
 import { TabStrip } from '@renderer/features/tabs/TabStrip';
 import { StatusBar } from '@renderer/components/StatusBar';
+import { ErrorBoundary } from '@renderer/components/ErrorBoundary';
 import { LayoutTreeRenderer } from '@renderer/features/layout/LayoutTreeRenderer';
 import { useWorkspaceStore } from '@renderer/features/layout/useWorkspaceStore';
 import { useWorkspaceStore as useUIWorkspaceStore } from '@renderer/store/useWorkspaceStore';
@@ -11,7 +12,13 @@ import { useProfilesStore } from '@renderer/store/useProfilesStore';
 import { terminalRegistry } from '@renderer/features/terminal/registry/TerminalRegistry';
 import { rendererPool } from '@renderer/features/terminal/renderer-pool/RendererPool';
 import { rendererPerfTracker } from '@renderer/perfTracker';
+import { useLogStore } from '@renderer/store/useLogStore';
+import { initRendererLogger } from '@renderer/utils/rendererLogger';
 import styles from './App.module.css';
+
+const LogDetectorPanel = lazy(() =>
+  import('@renderer/features/logger/LogDetectorPanel').then((m) => ({ default: m.LogDetectorPanel }))
+);
 
 const SettingsView = lazy(() =>
   import('@renderer/components/settings/SettingsView').then((m) => ({ default: m.SettingsView }))
@@ -29,6 +36,10 @@ const ScriptRunnerView = lazy(() =>
   import('@renderer/features/scripts/ScriptRunnerView').then((m) => ({ default: m.ScriptRunnerView }))
 );
 
+const AgentsView = lazy(() =>
+  import('@renderer/features/ai-agents/AgentsView').then((m) => ({ default: m.AgentsView }))
+);
+
 export const App: React.FC = () => {
   const { loadSettings } = useSettingsStore();
   const {
@@ -44,11 +55,13 @@ export const App: React.FC = () => {
   } = useWorkspaceStore();
 
   const { activeNavTab, setActiveNavTab } = useUIWorkspaceStore();
+  const { dockPosition } = useLogStore();
   const [settingsInitialTab, setSettingsInitialTab] = useState<string>('general');
 
   const { loadProfiles } = useProfilesStore();
 
   useEffect(() => {
+    const cleanupLogger = initRendererLogger();
     rendererPerfTracker.mark('reactMounted');
     loadSettings();
     loadProfiles();
@@ -63,12 +76,20 @@ export const App: React.FC = () => {
         },
       };
     }
+    (window as any).openDocs = (topicId: string, sectionId?: string) => {
+      useUIWorkspaceStore.getState().openDocs(topicId, sectionId);
+    };
+
+    return () => {
+      cleanupLogger();
+    };
   }, [loadSettings, loadProfiles]);
 
   // IPC Event Listeners for Docking and Navigation
   useEffect(() => {
     const unsubDock = window.api?.session?.onDockTab?.((data) => {
       useWorkspaceStore.getState().dockTab(data);
+      useUIWorkspaceStore.getState().setActiveNavTab('terminals');
     });
 
     const unsubPopOut = window.api?.session?.onTabPoppedOut?.((data) => {
@@ -79,12 +100,21 @@ export const App: React.FC = () => {
       if (dest === 'settings') {
         setSettingsInitialTab('general');
         setActiveNavTab('settings');
-      } else if (dest === 'docs') {
-        setActiveNavTab('docs');
+      } else if (dest === 'docs' || dest.startsWith('docs:')) {
+        if (dest.startsWith('docs:')) {
+          const parts = dest.split(':');
+          const topicId = parts[1] || 'getting-started';
+          const sectionId = parts[2];
+          useUIWorkspaceStore.getState().openDocs(topicId, sectionId);
+        } else {
+          setActiveNavTab('docs');
+        }
       } else if (dest === 'profiles') {
         setActiveNavTab('profiles');
       } else if (dest === 'scripts') {
         setActiveNavTab('scripts');
+      } else if (dest === 'agents') {
+        setActiveNavTab('agents');
       }
     });
 
@@ -110,11 +140,18 @@ export const App: React.FC = () => {
         return;
       }
 
-      // Escape to close Settings, Docs, Profiles, or Scripts and return to terminals
-      if (e.key === 'Escape' && (activeNavTab === 'settings' || activeNavTab === 'docs' || activeNavTab === 'profiles' || activeNavTab === 'scripts')) {
-        e.preventDefault();
-        setActiveNavTab('terminals');
-        return;
+      // Escape to close Settings, Docs, Profiles, Scripts, Agents, or Log Detector and return to terminals
+      if (e.key === 'Escape') {
+        if (useLogStore.getState().isOpen) {
+          e.preventDefault();
+          useLogStore.getState().setOpen(false);
+          return;
+        }
+        if (activeNavTab === 'settings' || activeNavTab === 'docs' || activeNavTab === 'profiles' || activeNavTab === 'scripts' || activeNavTab === 'agents') {
+          e.preventDefault();
+          setActiveNavTab('terminals');
+          return;
+        }
       }
 
       // Ctrl+, for Settings
@@ -128,10 +165,18 @@ export const App: React.FC = () => {
       // Ctrl+Shift Shortcuts
       if (e.ctrlKey && e.shiftKey) {
         const key = e.key.toLowerCase();
-        if (key === 'r') {
+        if (key === 'l') {
+          // Ctrl+Shift+L for Realtime Log Detector
+          e.preventDefault();
+          useLogStore.getState().toggleOpen();
+        } else if (key === 'r') {
           // Ctrl+Shift+R for Script Runner
           e.preventDefault();
           setActiveNavTab(activeNavTab === 'scripts' ? 'terminals' : 'scripts');
+        } else if (key === 'g') {
+          // Ctrl+Shift+G for AI Agents Panel
+          e.preventDefault();
+          setActiveNavTab(activeNavTab === 'agents' ? 'terminals' : 'agents');
         } else if (key === 't') {
           e.preventDefault();
           newTab();
@@ -151,9 +196,6 @@ export const App: React.FC = () => {
         } else if (key === 'e') {
           e.preventDefault();
           splitPane('column');
-        } else if (key === 'g') {
-          e.preventDefault();
-          toggleGridMode();
         } else if (e.key === 'Enter') {
           e.preventDefault();
           toggleMaximizePane();
@@ -206,47 +248,82 @@ export const App: React.FC = () => {
           }}
         />
 
-        <div className={styles.contentArea}>
-          {activeNavTab === 'settings' ? (
-            <Suspense fallback={null}>
-              <SettingsView
-                initialSection={settingsInitialTab}
-                onClose={() => setActiveNavTab('terminals')}
-              />
-            </Suspense>
-          ) : activeNavTab === 'docs' ? (
-            <Suspense fallback={null}>
-              <CustomizationDocsView
-                onClose={() => setActiveNavTab('terminals')}
-              />
-            </Suspense>
-          ) : activeNavTab === 'scripts' ? (
-            <Suspense fallback={null}>
-              <ScriptRunnerView />
-            </Suspense>
-          ) : activeNavTab === 'profiles' ? (
-            <Suspense fallback={null}>
-              <ProfilesView />
-            </Suspense>
-          ) : (
-            <>
-              <TabStrip />
-              <div className={styles.paneContainer}>
-                {activeTab ? (
-                  <LayoutTreeRenderer
-                    key={activeTab.id}
-                    node={activeTab.root}
-                    focusedPaneId={activeTab.focusedPaneId}
-                    maximizedPaneId={activeTab.maximizedPaneId}
+        <div
+          className={styles.contentArea}
+          style={{
+            flexDirection: dockPosition === 'bottom' ? 'column' : 'row',
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              overflow: 'hidden',
+            }}
+          >
+            {activeNavTab === 'settings' ? (
+              <ErrorBoundary>
+                <Suspense fallback={null}>
+                  <SettingsView
+                    initialSection={settingsInitialTab}
+                    onClose={() => setActiveNavTab('terminals')}
                   />
-                ) : (
-                  <div className={styles.placeholderView}>
-                    <h3>No Active Tab</h3>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                </Suspense>
+              </ErrorBoundary>
+            ) : activeNavTab === 'docs' ? (
+              <ErrorBoundary>
+                <Suspense fallback={null}>
+                  <CustomizationDocsView
+                    onClose={() => setActiveNavTab('terminals')}
+                  />
+                </Suspense>
+              </ErrorBoundary>
+            ) : activeNavTab === 'scripts' ? (
+              <ErrorBoundary>
+                <Suspense fallback={null}>
+                  <ScriptRunnerView />
+                </Suspense>
+              </ErrorBoundary>
+            ) : activeNavTab === 'profiles' ? (
+              <ErrorBoundary>
+                <Suspense fallback={null}>
+                  <ProfilesView />
+                </Suspense>
+              </ErrorBoundary>
+            ) : activeNavTab === 'agents' ? (
+              <ErrorBoundary>
+                <Suspense fallback={null}>
+                  <AgentsView />
+                </Suspense>
+              </ErrorBoundary>
+            ) : (
+              <>
+                <TabStrip />
+                <div className={styles.paneContainer}>
+                  {activeTab ? (
+                    <LayoutTreeRenderer
+                      key={activeTab.id}
+                      node={activeTab.root}
+                      focusedPaneId={activeTab.focusedPaneId}
+                      maximizedPaneId={activeTab.maximizedPaneId}
+                    />
+                  ) : (
+                    <div className={styles.placeholderView}>
+                      <h3>No Active Tab</h3>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          <Suspense fallback={null}>
+            <LogDetectorPanel />
+          </Suspense>
         </div>
       </div>
 

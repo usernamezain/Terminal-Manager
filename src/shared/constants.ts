@@ -55,6 +55,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
       generic: true,
     },
   },
+  aiAgents: {
+    defaultLaunchMode: 'terminal',
+    showInExplorerMenu: true,
+    showInTrayMenu: true,
+    extraPathDirs: [],
+    autoRescanOnStart: true,
+  },
 };
 
 

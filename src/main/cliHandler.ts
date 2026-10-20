@@ -14,6 +14,10 @@ export interface ParsedCliArgs {
   dock?: boolean;
   hidden?: boolean;
   runSequence?: string;
+  agent?: string;
+  agentsPanel?: boolean;
+  mode?: 'tab' | 'window';
+  resume?: boolean;
 }
 
 /**
@@ -204,6 +208,20 @@ export function parseCliArgs(argv: string[]): ParsedCliArgs {
       result.runSequence = cleanRawPathString(arg.slice('--run-sequence='.length));
     } else if (arg === '--run-sequence' && i + 1 < argv.length && argv[i + 1] && !argv[i + 1]!.startsWith('--')) {
       result.runSequence = cleanRawPathString(argv[++i]!);
+    } else if (arg.startsWith('--agent=')) {
+      result.agent = cleanRawPathString(arg.slice('--agent='.length));
+    } else if (arg === '--agent' && i + 1 < argv.length && argv[i + 1] && !argv[i + 1]!.startsWith('--')) {
+      result.agent = cleanRawPathString(argv[++i]!);
+    } else if (arg === '--agents-panel') {
+      result.agentsPanel = true;
+    } else if (arg.startsWith('--mode=')) {
+      const m = arg.slice('--mode='.length).toLowerCase();
+      if (m === 'tab' || m === 'window') result.mode = m;
+    } else if (arg === '--mode' && i + 1 < argv.length && argv[i + 1] && !argv[i + 1]!.startsWith('--')) {
+      const m = argv[++i]!.toLowerCase();
+      if (m === 'tab' || m === 'window') result.mode = m;
+    } else if (arg === '--resume') {
+      result.resume = true;
     }
   }
 

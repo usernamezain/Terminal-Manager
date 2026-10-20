@@ -28,7 +28,12 @@ export class SettingsStore {
         logger.info('Settings file created with defaults');
       }
     } catch (err) {
-      logger.error('Failed to load settings, reverting to defaults', err);
+      logger.error('Failed to load settings, backing up and reverting to defaults', err);
+      try {
+        if (fs.existsSync(this.filePath)) {
+          fs.copyFileSync(this.filePath, `${this.filePath}.corrupt.${Date.now()}.bak`);
+        }
+      } catch {}
       this.settings = { ...DEFAULT_SETTINGS };
       this.saveAtomic();
     }

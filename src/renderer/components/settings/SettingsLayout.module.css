@@ -65,6 +65,22 @@
   border-color: var(--border-subtle);
 }
 
+.learnMoreLink {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: var(--font-size-secondary, 12px);
+  cursor: pointer;
+  padding: 4px 8px;
+  text-decoration: underline;
+  border-radius: var(--radius-control, 6px);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.learnMoreLink:hover {
+  opacity: 0.8;
+}
+
 /* Two-column layout */
 .layoutBody {
   flex: 1;

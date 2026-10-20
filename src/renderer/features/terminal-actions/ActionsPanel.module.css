@@ -234,6 +234,26 @@
   font-weight: 400;
 }
 
+.sectionBadge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: rgba(137, 180, 250, 0.15);
+  color: var(--accent-primary, #89b4fa);
+  text-transform: lowercase;
+}
+
+.disabledReason {
+  font-size: 11px;
+  color: var(--text-muted, #6c7086);
+  font-style: italic;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sectionBody {
   padding: 4px 0 8px 0;
 }
