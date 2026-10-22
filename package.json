@@ -2,6 +2,7 @@
   "name": "terminal-manager",
   "version": "0.1.0",
   "description": "Desktop Terminal Manager - Phase 1 Foundation",
+  "author": "MughalDev <devmughal8@gmail.com>",
   "main": "dist/main/index.js",
   "scripts": {
     "docs:generate": "npx tsx scripts/docs-generate.ts",
@@ -120,6 +121,7 @@
     "linux": {
       "icon": "build/icons",
       "category": "TerminalEmulator",
+      "maintainer": "MughalDev <devmughal8@gmail.com>",
       "target": [
         "AppImage",
         "deb"
