@@ -13,7 +13,7 @@
 [![WhatsApp Channel](https://img.shields.io/badge/WhatsApp%20Channel-Join%20Community-25D366?logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029VbBUVv35fM5eAnXw3w2D)
 [![Mughal Dev](https://img.shields.io/badge/Official%20Site-mughal.dev-blueviolet?logo=globe)](https://mughal.dev)
 
-[Download & Install](#download--installation) • [Screenshots](#-application-previews--screenshots) • [Feature Deep-Dive](#-feature-deep-dive) • [Community & Drops](#-join-the-mughaldev-community--exclusive-drops) • [Build from Source](#quickstart-build-from-source) • [Docs & Knowledge Base](#-documentation--knowledge-base)
+[Download & Install](#download--installation) • [For Devs & Vibe Coders](#-how-it-helps-developers-vs-vibe-coders) • [Screenshots](#-application-previews--screenshots) • [Feature Deep-Dive](#-feature-deep-dive) • [Community & Drops](#-join-the-mughaldev-community--exclusive-drops) • [Build from Source](#quickstart-build-from-source) • [Docs & Knowledge Base](#-documentation--knowledge-base)
 
 </div>
 
@@ -72,6 +72,39 @@ Stay connected with our developer community and get access to exclusive open-sou
 <img src="docs/assets/screenshots/in-app-docs.png" width="95%" alt="In-App Documentation Browser" />
 
 </div>
+
+---
+
+## ⚡ How It Helps Developers vs. Vibe Coders
+
+Whether you are a seasoned systems software engineer or an AI-first "vibe coder" prompting autonomous agents at full velocity, Terminal Manager is engineered to eliminate terminal friction, prevent workflow disruptions, and accelerate how you build.
+
+| Capability / Pain Point | 🛠️ For Traditional Developers | 🔮 For Vibe Coders (AI Builders) | 🎯 Friction Point Solved |
+| :--- | :--- | :--- | :--- |
+| **CLI AI Coding Agents** | Run coding agents in isolated sub-shells without polluting your primary build environment or global dependencies. | Launch **15 pre-configured CLI agents** (Claude Code, Antigravity, Aider, Hermes, etc.) with 1 click without setup friction. | Eliminates broken Python virtual environments, missing global binaries, and agent PATH configuration errors. |
+| **API Key & Secret Security** | Keep sensitive production tokens and private API keys locked away from repository files and `.env` commits. | Store Anthropic, OpenAI, and Gemini keys with **OS-level DPAPI encryption** (`CryptProtectData`); never leak keys in prompts. | Zero accidental token leaks on GitHub, stream shares, screen recordings, or clipboard history. |
+| **Multi-Pane Workspaces** | View compiler output, database logs, live test runners, and git status side-by-side in one window (`Ctrl+Shift+D` / `Ctrl+Shift+E`). | Keep your **AI agent active in Pane 1**, the **dev server in Pane 2**, and **git diffs in Pane 3** simultaneously. | Eliminates chaotic Alt-Tab window switching across dozens of disconnected terminal windows. |
+| **High-Throughput Rendering** | WebGL-accelerated 60fps rendering handles massive 50MB+ continuous compiler/docker log dumps without freezing the UI. | Fast streaming tokens render high-speed LLM outputs and massive multi-file code diffs with sub-10ms response latency. | Prevents terminal freezing, UI lockups, and dropped keystrokes during intensive builds or rapid agent generation. |
+| **Multi-Ecosystem Project Runner** | Auto-detects targets across **10 ecosystems** (Node.js, Rust, Python, Go, .NET, Java, Ruby, PHP, Make, Docker). | Click-to-run package scripts without needing to memorize syntax for `Cargo.toml`, `npm`, `poetry`, or `mvn`. | Eliminates opening `package.json` or config files just to remember the exact test or start command. |
+| **Automated Script Queue** | Execute complex multi-step build, migration, and test sequences with sequential FIFO queuing and retry rules. | Chain automated prompt pipelines and project setup routines (clone ➔ install ➔ seed ➔ launch) without babysitting. | No more manual waiting and copy-pasting command after command between execution steps. |
+| **Process Persistence & Detachment** | Shell processes live in the Electron main process; closing or refreshing views never terminates running servers. | Run long-running autonomous agent refactors or benchmarks overnight safely in the **system tray**. | Prevents lost shell state, interrupted agent sessions, or aborted servers when windows close. |
+| **PowerShell Customization** | Oh My Posh themes and 17-slot PSReadLine coloring isolated to `CTTcustom.ps1` with sub-800ms Fast Start. | Get a stunning, colorful, modern terminal with git status and path glyphs out of the box with zero dotfile editing. | Eliminates slow PowerShell startup times (>3s) and broken global profile configurations. |
+| **Windows Explorer Hook** | Right-click any folder in Windows Explorer to open a ready shell in that directory without admin prompts (`HKCU`). | Instantly jump straight into newly cloned repositories or agent worktrees right from your file manager. | No navigating with tedious `cd C:\Users\...` paths from deep file directory trees. |
+| **Offline Technical Reference** | Searchable native documentation browser (`F1`) with complete keyboard shortcut and configuration references. | Instant answers on terminal shortcuts, command options, and troubleshooting without leaving the flow state. | No searching Google or docs websites for basic shortcut and configuration lookups. |
+
+---
+
+### 💡 Why Traditional Developers Love It
+1. **Zero UI Freezes**: WebGL rendering pipeline offloads text rasterization to the GPU, preventing terminal lockups even when piping huge files or running verbose compilers.
+2. **True Process Resilience**: The Electron main process owns the ConPTY/PTY lifecycle. If the renderer reloads or crashes, background compilations and database sessions continue without disruption.
+3. **Non-Elevated Explorer Integration**: Integrates directly into Windows Explorer right-click menus via user-level `HKCU` keys—no UAC administrator prompts required.
+4. **App-Scoped Shell Protection**: Custom aliases, prompts, and completions live strictly inside `CTTcustom.ps1`, leaving your system-wide profile clean and intact.
+
+### 🚀 Why Vibe Coders Swear By It
+1. **All Your Agents in One Place**: Claude Code, Antigravity, Aider, Copilot, OpenCode, Hermes, and 9 others discovered and launched with single-click ease.
+2. **Split & Supervise**: Watch your AI agent edit code in real-time in the left pane while your local Vite or Next.js development server hot-reloads in the right pane.
+3. **Safe Credentials**: DPAPI encryption ensures you can stream your coding sessions, share your screen, or record demos without exposing API keys.
+4. **Autonomous Pipeline Queue**: Queue multiple scripts (e.g. `npx prisma db push`, `npm run seed`, `npm run dev`) into the FIFO queue and let Terminal Manager handle execution seamlessly.
 
 ---
 
