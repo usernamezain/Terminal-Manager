@@ -39,18 +39,18 @@ export function cleanRawPathString(raw?: string): string | undefined {
     cleaned = cleaned.slice(0, -1).trim();
   }
 
+  // Drive root normalization: "C:" or "C:\"
+  if (/^[a-zA-Z]:\\?$/.test(cleaned)) {
+    cleaned = `${cleaned.slice(0, 2)}\\`;
+  }
+
   if (process.platform === 'win32') {
-    // 3. Normalize forward slashes to backslashes
+    // Normalize forward slashes to backslashes
     cleaned = cleaned.replace(/\//g, '\\');
 
     if (cleaned.endsWith('\\') && cleaned.length > 3) {
       // If it ends with trailing slash (except drive roots like C:\)
       cleaned = cleaned.replace(/\\+$/, '');
-    }
-
-    // 4. Drive root normalization: "C:" or "C:\"
-    if (/^[a-zA-Z]:\\?$/.test(cleaned)) {
-      cleaned = `${cleaned.slice(0, 2)}\\`;
     }
   } else {
     // POSIX path normalization
@@ -66,7 +66,7 @@ export function cleanRawPathString(raw?: string): string | undefined {
  * Validates and normalizes a candidate directory path.
  * - Must exist.
  * - If a file is passed, its parent folder is returned.
- * - Normalizes the path with backslashes.
+ * - Normalizes the path with backslashes on Windows.
  * - Rejects unresolvable UNC paths.
  */
 export function validateAndNormalizeDirectory(rawPath?: string): string | undefined {
@@ -86,10 +86,13 @@ export function validateAndNormalizeDirectory(rawPath?: string): string | undefi
       }
     }
 
-    let normalized = path.resolve(cleaned).replace(/\//g, '\\');
-    // Ensure drive root like "C:\" has trailing backslash
-    if (/^[a-zA-Z]:\\?$/.test(normalized)) {
-      normalized = `${normalized.slice(0, 2)}\\`;
+    let normalized = path.resolve(cleaned);
+    if (process.platform === 'win32') {
+      normalized = normalized.replace(/\//g, '\\');
+      // Ensure drive root like "C:\" has trailing backslash
+      if (/^[a-zA-Z]:\\?$/.test(normalized)) {
+        normalized = `${normalized.slice(0, 2)}\\`;
+      }
     }
 
     const exists = fs.existsSync(normalized);
@@ -103,9 +106,12 @@ export function validateAndNormalizeDirectory(rawPath?: string): string | undefi
         resultDir = normalized;
       } else if (stats.isFile()) {
         stat = 'file';
-        resultDir = path.dirname(normalized).replace(/\//g, '\\');
-        if (/^[a-zA-Z]:\\?$/.test(resultDir)) {
-          resultDir = `${resultDir.slice(0, 2)}\\`;
+        resultDir = path.dirname(normalized);
+        if (process.platform === 'win32') {
+          resultDir = resultDir.replace(/\//g, '\\');
+          if (/^[a-zA-Z]:\\?$/.test(resultDir)) {
+            resultDir = `${resultDir.slice(0, 2)}\\`;
+          }
         }
         logger.info(`[Path Validation] File passed instead of folder. Using parent directory: "${resultDir}"`);
       } else {
