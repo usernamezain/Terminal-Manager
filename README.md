@@ -1,19 +1,28 @@
+<!-- SEO Meta Tags & Search Crawler Directives -->
+<!-- 
+  Primary Keywords: Terminal Manager, Terminal Emulator, Windows Terminal Alternative, Best Terminal for Windows, AI Coding Terminal, Vibe Coding Terminal, Claude Code Terminal, Oh My Posh PowerShell, Fast PTY Electron Terminal, Cross Platform Terminal Manager
+  Secondary Keywords: PowerShell profile customizer, Script runner queue, Hardware accelerated terminal, xterm.js WebGL terminal, mughal.dev drops, Zain Mughal
+  Canonical: https://github.com/usernamezain/Terminal-Manager
+-->
+
 <div align="center">
 
-<img src="docs/assets/logo.png" width="128" height="128" alt="Terminal Manager Logo" />
+<img src="docs/assets/logo.png" width="128" height="128" alt="Terminal Manager Logo - The Best Cross-Platform AI Terminal Emulator" />
 
 # Terminal Manager
 
-**A high-performance, hardware-accelerated cross-platform terminal workspace and automation environment.**
+**The Ultimate GPU-Accelerated Terminal Workspace, AI Agents Hub & Shell Automation Environment for Windows, macOS, and Linux.**
 
 [![CI Build](https://github.com/usernamezain/Terminal-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/usernamezain/Terminal-Manager/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/usernamezain/Terminal-Manager/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078d4.svg)](https://github.com/usernamezain/Terminal-Manager/releases/latest)
+[![GitHub Stars](https://img.shields.io/github/stars/usernamezain/Terminal-Manager?style=social)](https://github.com/usernamezain/Terminal-Manager)
+[![GitHub Forks](https://img.shields.io/github/forks/usernamezain/Terminal-Manager?style=social)](https://github.com/usernamezain/Terminal-Manager)
 [![WhatsApp Channel](https://img.shields.io/badge/WhatsApp%20Channel-Join%20Community-25D366?logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029VbBUVv35fM5eAnXw3w2D)
 [![Mughal Dev](https://img.shields.io/badge/Official%20Site-mughal.dev-blueviolet?logo=globe)](https://mughal.dev)
 
-[Download & Install](#download--installation) • [For Devs & Vibe Coders](#-how-it-helps-developers-vs-vibe-coders) • [Screenshots](#-application-previews--screenshots) • [Feature Deep-Dive](#-feature-deep-dive) • [Community & Drops](#-join-the-mughaldev-community--exclusive-drops) • [Build from Source](#quickstart-build-from-source) • [Docs & Knowledge Base](#-documentation--knowledge-base)
+[Download & Install](#download--installation) • [For Devs & Vibe Coders](#-how-it-helps-developers-vs-vibe-coders) • [Screenshots](#-application-previews--screenshots) • [Feature Deep-Dive](#-feature-deep-dive) • [SEO & FAQ Guide](#-frequently-asked-questions-seo--search-guide) • [Community & Drops](#-join-the-mughaldev-community--exclusive-drops) • [Build from Source](#quickstart-build-from-source) • [Docs & Knowledge Base](#-documentation--knowledge-base)
 
 </div>
 
@@ -45,31 +54,31 @@ Stay connected with our developer community and get access to exclusive open-sou
 ### 1. Main Terminal Workspace (Hardware-Accelerated & Multi-Pane)
 *WebGL-rendered terminal tabs with vertical and horizontal split panes, status monitoring, and quick shell switching.*
 <br/><br/>
-<img src="docs/assets/screenshots/main-terminal.png" width="95%" alt="Main Terminal Workspace" />
+<img src="docs/assets/screenshots/main-terminal.png" width="95%" alt="Terminal Manager - Main Multi-Tab Terminal Workspace for Windows, macOS, and Linux" />
 <br/><br/>
 
 ### 2. AI Coding Agents Hub
 *One-click launch and configuration for 15 CLI AI agents (Claude Code, Antigravity, Copilot CLI, Aider, OpenCode, Hermes, and more).*
 <br/><br/>
-<img src="docs/assets/screenshots/ai-agents.png" width="95%" alt="AI Coding Agents Hub" />
+<img src="docs/assets/screenshots/ai-agents.png" width="95%" alt="Terminal Manager AI Agents Hub - One-Click Launcher for Claude Code, Antigravity CLI, GitHub Copilot, and Aider" />
 <br/><br/>
 
 ### 3. Automated Script Runner & Task Queue
 *Queue, orchestrate, and execute scripts sequentially or concurrently with full log captures and retry policies.*
 <br/><br/>
-<img src="docs/assets/screenshots/script-runner.png" width="95%" alt="Script Runner & Task Queue" />
+<img src="docs/assets/screenshots/script-runner.png" width="95%" alt="Terminal Manager Script Runner - Automated Task Queue, Execution History, and Script Orchestration" />
 <br/><br/>
 
 ### 4. Settings & Shell Customization
 *Oh My Posh prompt theming, 17-slot PSReadLine syntax coloring, Fast Start cache, and system integration controls.*
 <br/><br/>
-<img src="docs/assets/screenshots/settings.png" width="95%" alt="Settings & Shell Customizer" />
+<img src="docs/assets/screenshots/settings.png" width="95%" alt="Terminal Manager Settings - Shell Experience, Oh My Posh Themes, and PowerShell Customizer" />
 <br/><br/>
 
 ### 5. In-App Offline Documentation Browser (`F1`)
 *Instant full-text searchable offline technical reference rendered directly from native markdown topics.*
 <br/><br/>
-<img src="docs/assets/screenshots/in-app-docs.png" width="95%" alt="In-App Documentation Browser" />
+<img src="docs/assets/screenshots/in-app-docs.png" width="95%" alt="Terminal Manager In-App Interactive Documentation Engine and Technical Knowledge Base" />
 
 </div>
 
@@ -332,6 +341,60 @@ Vite launches on `localhost:5173` with Hot Module Replacement (HMR) and Electron
 ```powershell
 npm start -- --cwd "C:\Projects\my-project"
 ```
+
+---
+
+## 🔍 Frequently Asked Questions (SEO & Search Guide)
+
+<details>
+<summary><strong>1. What is Terminal Manager and how does it compare to Windows Terminal or iTerm2?</strong></summary>
+
+**Terminal Manager** is a next-generation, GPU-accelerated terminal emulator and automation workspace built on Electron, React, and xterm.js WebGL. While traditional terminals (Windows Terminal, iTerm2, Alacritty, Hyper) only provide basic shell multiplexing, Terminal Manager integrates:
+- Built-in **AI Agents Hub** for launching and managing Claude Code, Aider, Antigravity, and Copilot CLI.
+- Native **Script Runner & Task Queue** for concurrent and sequential automation with output logs.
+- Dedicated **Shell Experience Customizer** with Oh-My-Posh themes and upstream Chris Titus Tech PowerShell profiles.
+- **Offline In-App Documentation Engine** (`F1`) with searchable topics and instant cheat sheets.
+</details>
+
+<details>
+<summary><strong>2. Why is Terminal Manager the best terminal for Vibe Coding and AI developers?</strong></summary>
+
+Terminal Manager is purposefully designed as the #1 terminal for **Vibe Coding**. It solves the friction of managing complex CLI flags, virtual environment activations, API keys, and background processes:
+- Launch AI agents into their own dedicated tabs or standalone pop-out windows with a single click.
+- Encrypted storage for sensitive API tokens (Anthropic, OpenAI, GitHub).
+- Active system prerequisites checking (verifying Node.js, Python, Git, and uv on your machine).
+- Seamless split-pane orchestration so AI agents code in one pane while you monitor build logs in another.
+</details>
+
+<details>
+<summary><strong>3. How does Terminal Manager customize PowerShell without breaking my system?</strong></summary>
+
+Terminal Manager uses **App-Scoped Isolation** by default (`Ctrl+,` > Shell Experience). It provisions themes (Cobalt2, Agnoster, Paradox), Fastfetch specs, and PSReadLine prediction in an isolated app directory. Your machine's system-wide `$PROFILE` remains 100% untouched unless you deliberately choose the System-Wide mode, which automatically creates timestamped append-only backups before making changes.
+</details>
+
+<details>
+<summary><strong>4. Is Terminal Manager available for Windows, macOS, and Linux?</strong></summary>
+
+Yes! Terminal Manager is 100% cross-platform. We release pre-compiled binaries for:
+- **Windows**: `.exe` (NSIS Installer) and Standalone Portable.
+- **macOS**: `.dmg` (Universal / Apple Silicon arm64).
+- **Linux**: `.AppImage` (Universal Linux) and `.deb` (Ubuntu, Debian, Mint).
+
+Download the latest version directly from the **[Releases Page](https://github.com/usernamezain/Terminal-Manager/releases/latest)**.
+</details>
+
+<details>
+<summary><strong>5. How can I add custom scripts or integrate Terminal Manager with Windows Explorer?</strong></summary>
+
+- **Windows Explorer Context Menu**: In Settings (`Ctrl+,`), click **Register Explorer Context Menu** to add "Open in Terminal Manager" to Windows right-click menus.
+- **Script Runner**: Go to the **Script Runner** tab (`Ctrl+Shift+R`), click **+ New**, and choose PowerShell, Batch, Node.js, or Bash. You can run scripts immediately or queue them for sequential background execution.
+</details>
+
+---
+
+## 🏷️ Search Tags & Keywords
+
+`terminal-manager` • `terminal emulator` • `windows terminal` • `windows terminal alternative` • `best terminal for windows` • `ai terminal` • `vibe coding terminal` • `claude code terminal` • `oh my posh themes` • `powershell profile customizer` • `hardware accelerated terminal` • `node pty electron` • `xtermjs webgl` • `developer tools 2026` • `mughal dev` • `cross platform terminal` • `script runner queue` • `terminal multiplexer` • `powershell 7` • `cli automation`
 
 ---
 
