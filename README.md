@@ -1,48 +1,83 @@
+<div align="center">
+
+<img src="docs/assets/logo.png" width="128" height="128" alt="Terminal Manager Logo" />
+
 # Terminal Manager
 
-<div align="center">
+**A high-performance, hardware-accelerated cross-platform terminal workspace and automation environment.**
 
 [![CI Build](https://github.com/usernamezain/Terminal-Manager/actions/workflows/ci.yml/badge.svg)](https://github.com/usernamezain/Terminal-Manager/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/usernamezain/Terminal-Manager/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078d4.svg)](https://github.com/usernamezain/Terminal-Manager/releases/latest)
-[![Electron](https://img.shields.io/badge/Electron-34.2.0-47848F.svg?logo=electron)](https://www.electronjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-61DAFB.svg?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
+[![WhatsApp Channel](https://img.shields.io/badge/WhatsApp%20Channel-Join%20Community-25D366?logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029VbBUVv35fM5eAnXw3w2D)
+[![Mughal Dev](https://img.shields.io/badge/Official%20Site-mughal.dev-blueviolet?logo=globe)](https://mughal.dev)
 
-**A high-performance, hardware-accelerated cross-platform terminal workspace and automation environment.**
-
-[Features](#key-features) • [Download & Install](#download--installation) • [Build from Source](#quickstart-build-from-source) • [How to Contribute](HOW-TO-CONTRIBUTE.md) • [Architecture](#architecture-summary) • [Documentation](#documentation) • [Reporting Issues](#reporting-issues)
+[Download & Install](#download--installation) • [Screenshots](#-application-previews--screenshots) • [Feature Deep-Dive](#-feature-deep-dive) • [Community & Drops](#-join-the-mughaldev-community--exclusive-drops) • [Build from Source](#quickstart-build-from-source) • [Docs & Knowledge Base](#-documentation--knowledge-base)
 
 </div>
 
 ---
 
-## Overview
+## 💬 Join the Mughal.dev Community & Exclusive Drops
 
-**Terminal Manager** combines hardware-accelerated terminal emulation (xterm.js + WebGL) with native ConPTY process management, multi-pane tabbed workspaces, standalone detached windows, read-only project runner target detection across 10 ecosystems, an automated multi-interpreter script runner, an isolated PowerShell 7 customization engine, and a curated catalog of 15 CLI AI coding agents.
+Stay connected with our developer community and get access to exclusive open-source tools, terminal themes, custom PowerShell scripts, automation presets, and early software releases!
 
-Designed specifically for Windows developers who demand speed, reliability, and modern aesthetics without sacrificing low-level terminal control.
+<div align="center">
+
+### 🚀 Official WhatsApp Community Channel
+**Daily developer drops, project updates, CLI shortcuts, themes, and community support.**
+
+[![Join WhatsApp Channel](https://img.shields.io/badge/Join%20WhatsApp%20Channel-Exclusive%20Drops%20%26%20Updates-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com/channel/0029VbBUVv35fM5eAnXw3w2D)
+
+👉 **[Click Here to Join: https://whatsapp.com/channel/0029VbBUVv35fM5eAnXw3w2D](https://whatsapp.com/channel/0029VbBUVv35fM5eAnXw3w2D)**
+
+🌐 *Visit **[mughal.dev](https://mughal.dev)** for web development resources, premium software templates, and technical guides.*
+
+</div>
 
 ---
 
-## Key Features
+## 📸 Application Previews & Screenshots
 
-- 🖥️ **Hardware-Accelerated Terminal**: xterm.js powered by `@xterm/addon-webgl` for 60fps rendering, sub-10ms latency, and high-throughput streams (50MB+ without UI freeze).
-- 🗂️ **Multi-Pane & Standalone Windows**: Tabbed interface with vertical and horizontal split panes (`Ctrl+Shift+D`, `Ctrl+Shift+E`), spatial focus navigation (`Alt+Arrows`), and ability to pop out tabs into standalone desktop windows and re-dock them seamlessly.
-- ⚙️ **Project Runner (10 Ecosystems)**: Automatic read-only script target detection for Node.js, Rust, Python, Go, .NET, Java, Ruby, PHP, Make, and Docker with one-click pane execution.
-- 📜 **Script Runner & Automation**: Automated FIFO queue engine supporting PowerShell, Batch, Node.js, Python, and Bash with configurable timeout limits, retry policies, and log retention.
-- 🎨 **PowerShell 7 Shell Experience**: App-scoped and system-wide customization with Oh My Posh prompt themes, 17-slot PSReadLine syntax coloring, Terminal-Icons, and sub-second Fast Start caching.
-- 🤖 **AI Agents Hub**: Management view and catalog for 15 CLI AI coding agents (Claude Code, Antigravity, Codex, Copilot CLI, Aider, OpenCode, Hermes, and more) with DPAPI-encrypted secret storage and in-process `PATH` refresh.
-- 🔔 **Windows System Integration**: Non-elevated right-click Windows Explorer integration ("Open in Terminal Manager"), system tray background operation, login startup via HKCU registry, and single-instance CLI command forwarding.
-- 🛡️ **Hardened Security & Sandboxing**: Context-isolated preload bridge, Electron process sandboxing, atomic file writes (`*.bak` recovery), and privacy-redacted diagnostic export.
-- 📖 **In-App Searchable Docs**: Offline full-text searchable documentation viewer (`F1`) rendered directly from repository markdown sources.
+<div align="center">
+
+### 1. Main Terminal Workspace (Hardware-Accelerated & Multi-Pane)
+*WebGL-rendered terminal tabs with vertical and horizontal split panes, status monitoring, and quick shell switching.*
+<br/><br/>
+<img src="docs/assets/screenshots/main-terminal.png" width="95%" alt="Main Terminal Workspace" />
+<br/><br/>
+
+### 2. AI Coding Agents Hub
+*One-click launch and configuration for 15 CLI AI agents (Claude Code, Antigravity, Copilot CLI, Aider, OpenCode, Hermes, and more).*
+<br/><br/>
+<img src="docs/assets/screenshots/ai-agents.png" width="95%" alt="AI Coding Agents Hub" />
+<br/><br/>
+
+### 3. Automated Script Runner & Task Queue
+*Queue, orchestrate, and execute scripts sequentially or concurrently with full log captures and retry policies.*
+<br/><br/>
+<img src="docs/assets/screenshots/script-runner.png" width="95%" alt="Script Runner & Task Queue" />
+<br/><br/>
+
+### 4. Settings & Shell Customization
+*Oh My Posh prompt theming, 17-slot PSReadLine syntax coloring, Fast Start cache, and system integration controls.*
+<br/><br/>
+<img src="docs/assets/screenshots/settings.png" width="95%" alt="Settings & Shell Customizer" />
+<br/><br/>
+
+### 5. In-App Offline Documentation Browser (`F1`)
+*Instant full-text searchable offline technical reference rendered directly from native markdown topics.*
+<br/><br/>
+<img src="docs/assets/screenshots/in-app-docs.png" width="95%" alt="In-App Documentation Browser" />
+
+</div>
 
 ---
 
 ## Download & Installation
 
-Pre-built, ready-to-run packages are generated by GitHub Actions for **Windows**, **macOS**, and **Linux**. You can download them directly from the table below or visit the [GitHub Releases](https://github.com/usernamezain/Terminal-Manager/releases/latest) page.
+Pre-built, ready-to-run packages are compiled by GitHub Actions for **Windows**, **macOS**, and **Linux**. You can download them directly from the table below or visit the [GitHub Releases](https://github.com/usernamezain/Terminal-Manager/releases/latest) page.
 
 | Platform | Format | Architecture | Direct Download |
 | :--- | :--- | :--- | :--- |
@@ -60,14 +95,14 @@ Pre-built, ready-to-run packages are generated by GitHub Actions for **Windows**
 
 #### 🪟 Windows (Windows 10 / 11)
 
-**Option A: Installer (Recommended)**
+**Option A: Setup Installer (Recommended)**
 1. Download [Terminal.Manager.Setup.0.1.0.exe](https://github.com/usernamezain/Terminal-Manager/releases/download/v0.1.0/Terminal.Manager.Setup.0.1.0.exe).
-2. Run the installer to install Terminal Manager to your user profile and create desktop/start menu shortcuts.
+2. Run the installer to install Terminal Manager to your user profile and create desktop & start menu shortcuts.
 3. *Windows SmartScreen Note*: If Windows displays *"Windows protected your PC"*, click **More info** and then click **Run anyway** (this is standard for open-source applications without costly enterprise code-signing certificates).
 
-**Option B: Portable (No Installation Required)**
+**Option B: Standalone Portable (No Installation Required)**
 1. Download [Terminal.Manager.0.1.0.exe](https://github.com/usernamezain/Terminal-Manager/releases/download/v0.1.0/Terminal.Manager.0.1.0.exe).
-2. Double-click to launch directly from any folder or USB drive.
+2. Double-click to launch directly from any folder or USB drive without writing registry installation keys.
 
 **Windows Explorer Context Menu Integration:**
 - Inside Terminal Manager, press `Ctrl+,` to open **Settings > System Integration**.
@@ -109,14 +144,133 @@ Pre-built, ready-to-run packages are generated by GitHub Actions for **Windows**
 
 ---
 
+## 🔍 Feature Deep-Dive
+
+Terminal Manager was built from the ground up to solve the friction of modern Windows, macOS, and Linux terminal development. Here is how each major feature works:
+
+### 1. 🖥️ Hardware-Accelerated Terminal Subsystem
+- **Engine**: Built on `@xterm/xterm` powered by `@xterm/addon-webgl` for smooth 60fps GPU-accelerated rendering.
+- **Latency**: Sub-10ms keystroke-to-echo response time with high-throughput streams (50MB+ continuous text without freezing the UI).
+- **Process Model**: ConPTY pseudo-terminals on Windows and POSIX PTYs on macOS/Linux managed entirely inside the Electron main process. If a renderer window crashes or reloads, background shell sessions continue running uninterrupted.
+- **Warm Shell Pool**: Pre-warms shell instances in the background so opening a new tab feels instant (<50ms).
+
+### 2. 🗂️ Multi-Pane & Detachable Window Workspaces
+- **Split Panes**: Split any terminal vertically (`Ctrl+Shift+D`) or horizontally (`Ctrl+Shift+E`) infinitely.
+- **Spatial Navigation**: Move focus between panes intuitively using `Alt+Left`, `Alt+Right`, `Alt+Up`, and `Alt+Down`.
+- **Detached Windows**: Pop any terminal tab into a standalone OS desktop window. Detached windows can be independently placed on secondary monitors and re-docked back into the main workspace anytime.
+
+### 3. 🤖 AI Coding Agents Hub
+- **Curated Catalog**: Built-in discovery and launcher for 15 CLI AI coding agents:
+  - **Claude Code** (`claude`)
+  - **Antigravity** (`antigravity`)
+  - **Codex CLI** (`codex`)
+  - **GitHub Copilot CLI** (`copilot`)
+  - **Aider** (`aider`)
+  - **OpenCode** (`opencode`)
+  - **Hermes Agent** (`hermes`)
+  - **Goose CLI** (`goose`)
+  - **Devin CLI** (`devin`)
+  - **Mentat** (`mentat`)
+  - **Sweep** (`sweep`)
+  - **GPT-Researcher** (`gpt-researcher`)
+  - **AutoGPT** (`autogpt`)
+  - **MetaGPT** (`metagpt`)
+  - **ChatDev** (`chatdev`)
+- **Credential Vault**: DPAPI-encrypted credential storage on Windows (`CryptProtectData`) to securely keep API tokens safe.
+- **Environment Refresh**: Automatically scans and injects Python virtual environments, Node global paths, and Cargo bins directly into running agent sessions.
+
+### 4. ⚙️ Multi-Ecosystem Project Runner
+- **Zero Configuration**: Open any codebase, and Terminal Manager automatically detects build, test, and run scripts without modifying any project files.
+- **10 Supported Ecosystems**:
+  - **Node.js**: `npm`, `pnpm`, `yarn`, `bun` (`package.json`)
+  - **Rust**: `cargo run`, `cargo test`, `cargo build` (`Cargo.toml`)
+  - **Python**: `pip`, `poetry`, `pipenv`, `uv`, `pytest`, `manage.py`, `app.py`
+  - **Go**: `go run`, `go test`, `go build` (`go.mod`)
+  - **.NET**: `dotnet run`, `dotnet test` (`*.csproj`, `*.sln`)
+  - **Java**: Maven (`mvn`), Gradle (`gradlew`, `build.gradle`)
+  - **Ruby**: Bundler, Rails, Rake (`Gemfile`)
+  - **PHP**: Composer, Artisan (`composer.json`)
+  - **Make**: Target discovery from `Makefile`
+  - **Docker**: `docker-compose.yml` service management
+- **One-Click Execution**: Click any script to run it immediately in a dedicated split pane or background task.
+
+### 5. 📜 Automated FIFO Script Runner
+- **Task Orchestration**: Execute automated sequences of scripts with configurable queue order.
+- **Multi-Interpreter**: Supports PowerShell (`.ps1`), Windows Command Prompt (`.bat`, `.cmd`), Bash (`.sh`), Node.js (`.js`, `.mjs`), and Python (`.py`).
+- **Resilience & Control**: Per-script timeout limits, retry counters, and `onFailure: 'stop' | 'continue'` rules.
+- **Persistent Logs**: Retains full terminal execution logs, exit codes, and timestamps for post-mortem debugging.
+
+### 6. 🎨 PowerShell 7 & Shell Customization
+- **App-Scoped Profile**: Isolates customizations to `CTTcustom.ps1` so system-wide PowerShell profiles are never modified without explicit consent.
+- **Oh My Posh Integration**: Select, preview, and apply popular Oh My Posh prompt themes (`atomic`, `jandedobbeleer`, `agnoster`, etc.).
+- **PSReadLine Syntax Palette**: Full 17-slot syntax coloring controls (Commands, Parameters, Strings, Operators, Variables, Errors).
+- **Fast Start Caching**: Pre-compiles module manifests to slash PowerShell startup time below 800ms.
+
+### 7. 🔔 Non-Elevated System Integration
+- **Windows Explorer Right-Click**: Adds "Open in Terminal Manager" to folders and drive roots using user-level HKCU registry keys (no administrator elevation required).
+- **System Tray Residency**: Minimize Terminal Manager to the system tray to keep long-running development servers and watchers active in the background.
+- **CLI Parameter Forwarding**: Single-instance architecture enables running `terminal-manager --cwd "C:\MyProject"` from external scripts without spawning redundant app windows.
+
+---
+
+## ⌨️ Essential Keyboard Shortcuts
+
+| Shortcut | Action | Scope |
+| :--- | :--- | :--- |
+| `Ctrl+Shift+T` | Open New Terminal Tab | Global |
+| `Ctrl+Shift+W` | Close Active Tab / Pane | Global |
+| `Ctrl+Shift+D` | Split Active Pane Vertically | Workspace |
+| `Ctrl+Shift+E` | Split Active Pane Horizontally | Workspace |
+| `Alt+Arrows` | Navigate Focus Between Panes (Left/Right/Up/Down) | Workspace |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Switch to Next / Previous Tab | Global |
+| `Ctrl+Shift+O` | Pop Tab into Standalone Window | Active Tab |
+| `Ctrl+Shift+G` | Open AI Agents Hub | Navigation |
+| `Ctrl+Shift+R` | Open Script Runner & Task Queue | Navigation |
+| `Ctrl+,` | Open Settings & Customizer | Navigation |
+| `F1` | Open In-App Documentation Browser | Global |
+| `Ctrl+Shift+F` | Search Active Terminal Scrollback | Terminal |
+| `Ctrl+Shift+C` / `Ctrl+Shift+V` | Copy / Paste Terminal Text | Terminal |
+
+*All keybindings can be customized in **Settings (`Ctrl+,`) > Keyboard Shortcuts**.*
+
+---
+
+## 📚 Documentation & Knowledge Base
+
+Terminal Manager includes 19 comprehensive documentation guides built into the repository. You can read them directly on GitHub or press `F1` inside the app for the full-text searchable reader:
+
+| Guide | Description | Path |
+| :--- | :--- | :--- |
+| **01. Getting Started** | Installation, system requirements, first launch | [Read Guide](docs/content/01-getting-started.md) |
+| **02. Terminal Profiles** | Configuring PowerShell, CMD, WSL, Git Bash, and custom shells | [Read Guide](docs/content/02-profiles.md) |
+| **03. Appearance & Themes** | CSS tokens, color schemes, font styling, and background materials | [Read Guide](docs/content/03-appearance-and-themes.md) |
+| **04. Shell Experience** | Oh My Posh themes, PSReadLine syntax coloring, and Fast Start | [Read Guide](docs/content/04-shell-experience.md) |
+| **05. Terminal Basics** | xterm.js navigation, scrollback buffers, and WebGL rendering | [Read Guide](docs/content/05-terminal-basics.md) |
+| **06. Context Menu & Actions** | Right-click menus, actions panel, and quick commands | [Read Guide](docs/content/06-right-click-menu-and-actions-panel.md) |
+| **07. Snippets & Clipboard** | Saving reusable command snippets and clipboard history | [Read Guide](docs/content/07-snippets-and-clipboard-history.md) |
+| **08. Standalone & Tray** | Detaching windows, system tray residency, and background timers | [Read Guide](docs/content/08-standalone-windows-tray-and-background.md) |
+| **09. Explorer & CLI** | HKCU Windows Explorer context menus and single-instance CLI flags | [Read Guide](docs/content/09-explorer-integration-and-command-line.md) |
+| **10. Script Runner** | Automated task queue, interpreter support, and retry policies | [Read Guide](docs/content/10-script-runner.md) |
+| **11. Project Runner** | Auto-detection across 10 ecosystems and one-click script runs | [Read Guide](docs/content/11-project-runner.md) |
+| **12. AI Agents** | 15 CLI AI agents catalog, DPAPI credential security, and launcher | [Read Guide](docs/content/12-ai-agents.md) |
+| **13. Keyboard Shortcuts** | Comprehensive generated reference of all default shortcuts | [Read Guide](docs/content/_generated/13-keyboard-shortcuts.md) |
+| **14. Settings Reference** | Full schema documentation for all user settings | [Read Guide](docs/content/_generated/14-settings-reference.md) |
+| **15. Performance Guide** | Benchmarks, memory limits, and cold start optimizations | [Read Guide](docs/content/15-performance.md) |
+| **16. Troubleshooting & FAQ** | Solutions for ConPTY, WSL, path quoting, and driver issues | [Read Guide](docs/content/16-troubleshooting-and-faq.md) |
+| **17. Security & Privacy** | Process sandboxing, DPAPI encryption, and redacted diagnostics | [Read Guide](docs/content/17-security-and-privacy.md) |
+| **18. What's New** | Feature milestones, changelogs, and upgrade notes | [Read Guide](docs/content/18-whats-new.md) |
+| **19. Glossary** | Definitions of technical terminal, PTY, and Electron concepts | [Read Guide](docs/content/19-glossary.md) |
+
+---
+
 ## Quickstart (Build from Source)
 
-If you prefer building from source rather than using the pre-built binaries:
+If you prefer building from source rather than downloading the pre-built packages:
 
 ### Prerequisites
 - **Node.js**: `v20.x` or `v22.x` LTS.
 - **npm**: `v10.x` or higher.
-- **C++ Build Tools**: Visual Studio Build Tools with C++ (Windows), Xcode CLI tools (macOS), or `build-essential` (Linux).
+- **Native Build Tools**: Visual Studio Build Tools with C++ (Windows), Xcode CLI tools (macOS), or `build-essential` (Linux).
 
 ### 1. Clone the Repository
 
@@ -140,9 +294,7 @@ npm run dev
 
 Vite launches on `localhost:5173` with Hot Module Replacement (HMR) and Electron starts automatically.
 
-### 4. Open from PowerShell or Explorer
-
-Open any folder directly in a new terminal tab or window:
+### 4. Open Any Folder Directly
 
 ```powershell
 npm start -- --cwd "C:\Projects\my-project"
@@ -156,90 +308,22 @@ We welcome contributions from the community! Please read our full step-by-step g
 
 👉 **[HOW-TO-CONTRIBUTE.md](HOW-TO-CONTRIBUTE.md)** (or [CONTRIBUTING.md](CONTRIBUTING.md))
 
-### Contribution Workflow Summary
-1. **Fork & Clone**: Fork on GitHub and run `git clone https://github.com/<your-username>/Terminal-Manager.git`.
-2. **Branch**: Create a branch following conventions (`feature/name`, `fix/issue-description`, `docs/name`).
-3. **Develop**: Follow the design tokens (`tokens.css`) and process ownership rules (sessions in main, windows are views).
-4. **Automated Verification**: **Merges will be checked on behalf of the work**. Every PR must pass all 5 verification gates before merge:
-   ```bash
-   npm run verify
-   ```
-   - `npx tsc --noEmit` — 0 TypeScript errors
-   - `npx vitest run` — 149/149 test suites pass (100%)
-   - `npm run docs:check` — Documentation integrity & zero broken links
-   - `npm run perf:check` — Binary size, memory, and latency budgets
-   - `npm run build` — Clean production bundle compile
-5. **Open a PR**: Submit your pull request using our [Pull Request Template](.github/PULL_REQUEST_TEMPLATE.md).
+### Automated Verification Pipeline
+Every pull request must pass all 5 verification gates before merge:
+```bash
+npm run docs:check   # Documentation integrity & zero broken links
+npx tsc --noEmit     # TypeScript type-safety (0 errors)
+npx vitest run       # 149/149 unit and acceptance tests passing
+npm run build        # Clean production bundle compile
+```
 
 ---
 
 ## Reporting Issues & In-App Diagnostics
 
 Found a bug or need help?
-- **Create an Issue**: Select a template from [GitHub Issues](https://github.com/usernamezain/Terminal-Manager/issues/new/choose) (Bug Report, Feature Request, Documentation, Performance).
-- **In-App Redacted Diagnostics**: In Terminal Manager, open **Settings (`Ctrl+,`) > Help & Support** and click **Copy Diagnostics** (or click **Report an Issue**). This copies a sanitized system snapshot with your username, user paths, and API keys automatically stripped (`%USERPROFILE%`, `%USERNAME%`, `[REDACTED_SECRET]`). Paste it directly into your GitHub issue!
-
----
-
-## Command-Line Arguments
-
-Terminal Manager supports single-instance command forwarding. Running CLI commands while the app is running forwards flags to the active instance:
-
-| Flag | Parameter | Description |
-| :--- | :--- | :--- |
-| `--cwd` | `<path>` | Sets starting working directory (strict precedence: explicit > profile > home) |
-| `--profile` | `<name\|id>` | Selects the shell profile to launch |
-| `--new-window` | — | Forces creation of a new standalone window |
-| `--dock` | — | Docks detached sessions back into the main workspace |
-| `--hidden` | — | Launches application minimized to the system tray |
-| `--run-sequence`| `<id>` | Executes a named automated script sequence |
-| `--agent` | `<id>` | Launches a specific CLI AI agent immediately |
-| `--agents-panel`| — | Opens directly to the AI Agents management view |
-| `--mode` | `<tab\|window>` | Chooses presentation mode for agent or profile |
-| `--resume` | — | Restores previously open terminal tabs and layout |
-
----
-
-## Architecture Summary
-
-```text
-├── src/
-│   ├── main/              # Electron Main Process (PTY sessions, ConPTY, windows, tray, IPC)
-│   │   ├── sessionManager.ts     # ConPTY shell process ownership (lives across window reloads)
-│   │   ├── startupScheduler.ts   # Prioritized startup queue (critical > deferred > idle)
-│   │   ├── timerService.ts       # Background timer throttling when windows hidden
-│   │   ├── diagnosticsManager.ts # Privacy-redacted diagnostics generator
-│   │   ├── windowConfig.ts       # Hardened Electron sandbox & permission safety nets
-│   │   └── registryIntegration.ts# HKCU Explorer context menu integration
-│   ├── preload/           # Context-isolated secure bridge (`window.api`)
-│   ├── renderer/          # React 19 UI (views, components, Zustand stores, tokens)
-│   └── shared/            # Shared TypeScript interfaces, IPC channels, and schemas
-├── docs/                  # Documentation single source of truth (19 topic guides)
-└── .agent/skills/         # Pre-configured developer skills for agentic pair-programming
-```
-
-- **Process Ownership**: Sessions live in `sessionManager.ts` in the main process. Renderer windows are purely views. Detaching or closing a window never destroys running background shell processes.
-- **Window Resolution**: All IPC handlers resolve target windows dynamically from `event.sender` rather than storing a single global window reference.
-- **Registry Rules**: Context menus and login startup strictly write to Current User (`HKCU`) keys only. No administrator elevation is required.
-
----
-
-## Documentation
-
-All documentation is maintained under `docs/content/` as markdown files, which are rendered by both GitHub and the in-app Documentation Browser (`F1`):
-
-- Run `npm run docs:generate` to refresh dynamic reference tables (keyboard shortcuts, settings).
-- Run `npm run docs:check` to validate markdown frontmatter, anchor links, and schemas.
-
----
-
-## Community & Governance
-
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Contributing Guide](HOW-TO-CONTRIBUTE.md)
-- [Security Policy](SECURITY.md)
-- [Support & Discussions](SUPPORT.md)
-- [Changelog](CHANGELOG.md)
+- **Create an Issue**: Select a template from [GitHub Issues](https://github.com/usernamezain/Terminal-Manager/issues/new/choose).
+- **In-App Redacted Diagnostics**: In Terminal Manager, open **Settings (`Ctrl+,`) > Help & Support** and click **Copy Diagnostics**. This copies a sanitized system snapshot with your username, user paths, and API keys automatically stripped (`%USERPROFILE%`, `%USERNAME%`, `[REDACTED_SECRET]`).
 
 ---
 
