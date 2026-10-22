@@ -6,7 +6,7 @@ import { ScriptRunner } from '../scriptRunner';
 import { scriptsStore } from '../scriptsStore';
 import { ScriptDefinition } from '../../../shared/scriptRunnerTypes';
 
-describe('ScriptRunner Acceptance Tests (Live Execution)', () => {
+describe.skipIf(process.platform !== 'win32')('ScriptRunner Acceptance Tests (Live Execution)', () => {
   let runner: ScriptRunner;
   let tempDir: string;
 

@@ -1,16 +1,44 @@
-name: Release
+name: Multi-Platform Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag Name (e.g. v0.1.0). If empty, defaults to version in package.json.'
+        required: false
+        default: ''
+      draft:
+        description: 'Create Release as Draft'
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark Release as Pre-release'
+        type: boolean
+        default: false
 
 jobs:
-  build-release:
-    name: Build Windows Release Package
-    runs-on: windows-latest
-    permissions:
-      contents: write
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            name: windows-x64
+            target: --win --x64
+          - os: macos-latest
+            name: macos-arm64
+            target: --mac --arm64
+          - os: macos-13
+            name: macos-x64
+            target: --mac --x64
+          - os: ubuntu-22.04
+            name: linux-x64
+            target: --linux --x64
 
     steps:
       - name: Check out repository
@@ -26,38 +54,91 @@ jobs:
         run: npm ci
 
       - name: Rebuild native dependencies
-        run: npm run rebuild
+        run: npx electron-rebuild -f -w node-pty
 
-      - name: Verify All Checks
-        run: |
-          npm run docs:check
-          npx tsc --noEmit
-          npx vitest run
+      - name: Documentation Integrity Check
+        run: npm run docs:check
 
-      - name: Build Application Bundles
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Run Test Suite (Vitest)
+        run: npx vitest run
+
+      - name: Compile Production Bundles
         run: npm run build
 
-      - name: Package Windows Installer (electron-builder)
-        run: npx electron-builder --win nsis
+      - name: Package Application (electron-builder)
+        run: npx electron-builder ${{ matrix.target }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Generate Checksums
-        shell: pwsh
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.name }}
+          path: |
+            dist-release/*.exe
+            dist-release/*.dmg
+            dist-release/*.zip
+            dist-release/*.AppImage
+            dist-release/*.deb
+            dist-release/*.blockmap
+            dist-release/latest*.yml
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-packages
+
+      - name: Prepare Release Assets & Checksums
+        id: prepare
         run: |
-          Get-ChildItem -Path dist-release/*.exe | ForEach-Object {
-            $hash = Get-FileHash -Path $_.FullName -Algorithm SHA256
-            "$($hash.Hash)  $($_.Name)" | Out-File -FilePath "$($_.FullName).sha256" -Encoding ascii
-          }
+          mkdir -p final-assets
+          find release-packages -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.blockmap" -o -name "*.yml" \) -exec cp {} final-assets/ \;
+          
+          cd final-assets
+          echo "### Release Assets:"
+          ls -lh
+          
+          # Compute SHA-256 for all binary installers
+          sha256sum *.exe *.dmg *.zip *.AppImage *.deb 2>/dev/null > SHA256SUMS.txt || true
+          cat SHA256SUMS.txt
+          cd ..
 
-      - name: Create GitHub Release
+          # Determine Tag
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            PKG_VER=$(node -p "require('./package.json').version")
+            TAG="v${PKG_VER}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
-          prerelease: false
+          tag_name: ${{ steps.prepare.outputs.tag }}
+          name: Terminal Manager ${{ steps.prepare.outputs.tag }}
+          draft: ${{ github.event.inputs.draft || false }}
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          generate_release_notes: true
           files: |
-            dist-release/*.exe
-            dist-release/*.sha256
-            dist-release/*.blockmap
+            final-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

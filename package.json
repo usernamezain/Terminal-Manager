@@ -81,7 +81,8 @@
     "win": {
       "icon": "build/icons/icon.ico",
       "target": [
-        "nsis"
+        "nsis",
+        "portable"
       ]
     },
     "nsis": {
@@ -92,6 +93,37 @@
       "uninstallerIcon": "build/icons/icon.ico",
       "uninstallDisplayName": "Terminal Manager",
       "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "icon": "build/icons/icon-512x512.png",
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": null
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icons",
+      "category": "TerminalEmulator",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
     }
   }
 }

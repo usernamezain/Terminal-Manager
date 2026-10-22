@@ -39,17 +39,24 @@ export function cleanRawPathString(raw?: string): string | undefined {
     cleaned = cleaned.slice(0, -1).trim();
   }
 
-  // 3. Normalize forward slashes to backslashes
-  cleaned = cleaned.replace(/\//g, '\\');
+  if (process.platform === 'win32') {
+    // 3. Normalize forward slashes to backslashes
+    cleaned = cleaned.replace(/\//g, '\\');
 
-  if (cleaned.endsWith('\\') && cleaned.length > 3) {
-    // If it ends with trailing slash (except drive roots like C:\)
-    cleaned = cleaned.replace(/\\+$/, '');
-  }
+    if (cleaned.endsWith('\\') && cleaned.length > 3) {
+      // If it ends with trailing slash (except drive roots like C:\)
+      cleaned = cleaned.replace(/\\+$/, '');
+    }
 
-  // 4. Drive root normalization: "C:" or "C:\"
-  if (/^[a-zA-Z]:\\?$/.test(cleaned)) {
-    cleaned = `${cleaned.slice(0, 2)}\\`;
+    // 4. Drive root normalization: "C:" or "C:\"
+    if (/^[a-zA-Z]:\\?$/.test(cleaned)) {
+      cleaned = `${cleaned.slice(0, 2)}\\`;
+    }
+  } else {
+    // POSIX path normalization
+    if (cleaned.endsWith('/') && cleaned.length > 1) {
+      cleaned = cleaned.replace(/\/+$/, '');
+    }
   }
 
   return cleaned || undefined;

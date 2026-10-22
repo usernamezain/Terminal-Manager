@@ -6,7 +6,9 @@ import { cttGenerator } from '../generator';
 import { ShellExperienceSettingsSchema } from '../../../shared/shellExperienceTypes';
 
 describe('Shell Experience Profile Probe', () => {
-  it('should dot-source the app-scoped profile in Windows PowerShell with zero errors', () => {
+  it.skipIf(process.platform !== 'win32')(
+    'should dot-source the app-scoped profile in Windows PowerShell with zero errors',
+    () => {
     const defaultSettings = ShellExperienceSettingsSchema.parse({});
     const customScriptContent = cttGenerator.generate(defaultSettings);
 
