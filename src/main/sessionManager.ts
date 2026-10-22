@@ -194,8 +194,9 @@ export class SessionManager {
     if (isPowerShell) {
       try {
         const settings = getCurrentShellExpSettings();
-        if (settings.mode === 'app-scoped') {
-          const runtimeProfile = pathManager.getRuntimeProfilePath().replace(/'/g, "''");
+        const runtimeProfilePath = pathManager.getRuntimeProfilePath();
+        if (settings.mode === 'app-scoped' && fs.existsSync(runtimeProfilePath)) {
+          const runtimeProfile = runtimeProfilePath.replace(/'/g, "''");
           shellArgs = ['-NoLogo', '-NoProfile', '-NoExit', '-Command', `. '${runtimeProfile}'`];
           const activeThemeFile = path.join(pathManager.getThemesDir(), `${settings.activeTheme}.omp.json`);
           const binDir = pathManager.getBinDir();
