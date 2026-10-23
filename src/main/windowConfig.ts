@@ -29,6 +29,29 @@ export function getPreloadPath(): string {
 }
 
 /**
+ * Returns the verified renderer HTML entry path across development, unpacked execution, and packaged production.
+ */
+export function getRendererHtmlPath(): string {
+  const appPath = app.getAppPath();
+  const rootRelative = path.resolve(appPath, 'dist/renderer/index.html');
+  if (fs.existsSync(rootRelative)) {
+    return rootRelative;
+  }
+
+  const mainRelative = path.resolve(__dirname, '../renderer/index.html');
+  if (fs.existsSync(mainRelative)) {
+    return mainRelative;
+  }
+
+  const distRelative = path.resolve(__dirname, 'renderer/index.html');
+  if (fs.existsSync(distRelative)) {
+    return distRelative;
+  }
+
+  return rootRelative;
+}
+
+/**
  * Centralized WebPreferences factory shared by ALL BrowserWindow types.
  */
 export function getCommonWebPreferences(): Electron.WebPreferences {

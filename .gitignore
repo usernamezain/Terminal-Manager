@@ -4,3 +4,5 @@ dist-release/
 scratch/
 .gemini/
 *.log
+*.pfx
+build/certs/*.pfx

@@ -23,7 +23,7 @@ import { logHop } from './launchDebugger';
 import { launchAgent } from './ai-agents/agentLauncher';
 import { agentDetector } from './ai-agents/agentDetector';
 import { updateAgentExplorerMenu } from './ai-agents/agentRegistryExplorer';
-import { getCommonWebPreferences, attachWindowSafetyNets } from './windowConfig';
+import { getCommonWebPreferences, attachWindowSafetyNets, getRendererHtmlPath } from './windowConfig';
 import { startupScheduler } from './startupScheduler';
 import { timerService } from './timerService';
 
@@ -308,9 +308,19 @@ function createWindow(showImmediately = true): void {
   // Attach responsiveness monitoring and crash recovery
   attachWindowSafetyNets(mainWindow, 'main');
 
-  // Open DevTools in dev mode (skip in automated test)
-  if (isDev && process.env.TERMINAL_MANAGER_E2E !== '1') {
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // Allow F12 and Ctrl+Shift+I to toggle DevTools cleanly
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown') {
+      if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+        mainWindow?.webContents.toggleDevTools();
+      }
+    }
+  });
+
+  // Open DevTools only when explicitly requested via DEVTOOLS=1
+  const shouldAutoOpenDevTools = Boolean(process.env.DEVTOOLS === '1' || process.env.OPEN_DEVTOOLS === '1');
+  if (shouldAutoOpenDevTools && process.env.TERMINAL_MANAGER_E2E !== '1') {
+    mainWindow.webContents.openDevTools({ mode: 'right' });
   }
 
   // Block external navigation
@@ -328,20 +338,19 @@ function createWindow(showImmediately = true): void {
   // Setup IPC Handlers
   setupIpcHandlers(mainWindow);
 
-
   // Load URL or File
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
     logger.info(`[Renderer Load] Loading Dev Server URL: ${devServerUrl}`);
     mainWindow.loadURL(devServerUrl).catch((err) => {
       logger.warn(`Failed to load dev server URL ${devServerUrl}, loading index.html file fallback`, err);
-      const prodPath = path.join(__dirname, '../renderer/index.html');
+      const prodPath = getRendererHtmlPath();
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.loadFile(prodPath).catch(() => {});
       }
     });
   } else {
-    const prodPath = path.join(__dirname, '../renderer/index.html');
+    const prodPath = getRendererHtmlPath();
     logger.info(`[Renderer Load] Loading Production File: ${prodPath}`);
     mainWindow.loadFile(prodPath).catch(() => {});
   }

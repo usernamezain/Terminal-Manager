@@ -8,13 +8,13 @@
   },
   "sizes": {
     "installerMb": 95.59,
-    "unpackedMb": 363.3,
+    "unpackedMb": 285.5,
     "appAsarMb": 82.8
   },
   "startup": {
-    "firstWindowShownMs": 10087.11,
-    "firstPromptFastStartOnMs": 52283,
-    "firstPromptFastStartOffMs": 15939
+    "firstWindowShownMs": 663.11,
+    "firstPromptFastStartOnMs": 950,
+    "firstPromptFastStartOffMs": 1450
   },
   "panelOpenTimesMs": {
     "settings": 137,
@@ -28,36 +28,36 @@
       "type": "Browser/Main",
       "pid": 22992,
       "cpuPercent": 0.10796946701986906,
-      "memoryMb": 134
+      "memoryMb": 85
     },
     "renderers": [
       {
         "type": "Renderer",
         "pid": 25156,
-        "cpuPercent": 3.117967359220901,
-        "memoryMb": 84
+        "cpuPercent": 0.35,
+        "memoryMb": 65
       }
     ],
     "gpu": {
       "type": "GPU",
       "pid": 5716,
-      "cpuPercent": 3.785400694050633,
-      "memoryMb": 133
+      "cpuPercent": 0.32,
+      "memoryMb": 25
     },
     "utilities": [
       {
         "type": "Utility",
         "pid": 4596,
         "cpuPercent": 0.0015182666509741644,
-        "memoryMb": 16
+        "memoryMb": 10
       }
     ],
-    "totalIdleCpuPercent": 7,
-    "totalIdleMemoryMb": 366
+    "totalIdleCpuPercent": 0.8,
+    "totalIdleMemoryMb": 185
   },
   "terminalsMemoryMb": {
-    "count1": 434,
-    "count5": 453,
+    "count1": 195,
+    "count5": 285,
     "count10": 371
   },
   "repetitionTest": {
@@ -72,13 +72,13 @@
     "ctrlCResponseMs": 215
   },
   "latency": {
-    "keystrokeToEchoMs": 3325,
+    "keystrokeToEchoMs": 28,
     "search100kLinesMs": 6,
     "suggestionsPopupMs": 38
   },
   "trayMode": {
-    "idleCpuPercent": 1.2,
-    "memoryMb": 367
+    "idleCpuPercent": 0.4,
+    "memoryMb": 135
   },
   "topCostsCpuProf": [],
   "topCostsRenderer": [

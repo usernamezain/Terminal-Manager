@@ -1,5 +1,4 @@
-import { BrowserWindow, dialog, app } from 'electron';
-import path from 'path';
+import { BrowserWindow, dialog } from 'electron';
 import fs from 'fs';
 import { logger } from './logger';
 import { sessionManager } from './sessionManager';
@@ -7,7 +6,7 @@ import { getAppIconPath } from './registryIntegration';
 import { profilesStore } from './profilesStore';
 import { windowManager } from './windowManager';
 import { settingsStore } from './settingsStore';
-import { getCommonWebPreferences, attachWindowSafetyNets, DEBUG } from './windowConfig';
+import { getCommonWebPreferences, attachWindowSafetyNets, getRendererHtmlPath, DEBUG } from './windowConfig';
 
 export class StandaloneWindowManager {
   private windows: Map<string, BrowserWindow> = new Map(); // sessionId -> BrowserWindow
@@ -59,10 +58,17 @@ export class StandaloneWindowManager {
     // Attach safety nets (crash reload, unresponsive monitor, etc.)
     attachWindowSafetyNets(win, 'standalone');
 
-    // Open DevTools in dev/debug mode
-    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
-    if ((DEBUG || isDev) && process.env.TERMINAL_MANAGER_E2E !== '1') {
-      win.webContents.openDevTools({ mode: 'detach' });
+    // Allow F12 and Ctrl+Shift+I to toggle DevTools cleanly
+    win.webContents.on('before-input-event', (_event, input) => {
+      if (input.type === 'keyDown' && (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i'))) {
+        win.webContents.toggleDevTools();
+      }
+    });
+
+    // Open DevTools only when explicitly requested
+    const shouldAutoOpenDevTools = Boolean(process.env.DEVTOOLS === '1' || process.env.OPEN_DEVTOOLS === '1');
+    if (shouldAutoOpenDevTools && process.env.TERMINAL_MANAGER_E2E !== '1') {
+      win.webContents.openDevTools({ mode: 'right' });
     }
 
     // Safety timeout: if handshake takes > 3 seconds, show window with error state fallback
@@ -138,11 +144,11 @@ export class StandaloneWindowManager {
     if (devServerUrl) {
       win.loadURL(`${devServerUrl}?${queryString}`).catch((err) => {
         logger.warn(`Failed to load dev server for standalone window, fallback to file:`, err);
-        const prodPath = path.join(__dirname, '../renderer/index.html');
+        const prodPath = getRendererHtmlPath();
         win.loadFile(prodPath, { search: queryString });
       });
     } else {
-      const prodPath = path.join(__dirname, '../renderer/index.html');
+      const prodPath = getRendererHtmlPath();
       win.loadFile(prodPath, { search: queryString });
     }
 

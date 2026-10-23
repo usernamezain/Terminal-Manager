@@ -2,7 +2,7 @@
   "name": "terminal-manager",
   "version": "0.1.0",
   "description": "Desktop Terminal Manager - Phase 1 Foundation",
-  "author": "MughalDev <devmughal8@gmail.com>",
+  "author": "Zain Ali Mughal (Mughal.Dev) <devmughal8@gmail.com>",
   "main": "dist/main/index.js",
   "scripts": {
     "docs:generate": "npx tsx scripts/docs-generate.ts",
@@ -58,8 +58,9 @@
     "vitest": "^4.1.11"
   },
   "build": {
-    "appId": "com.terminalmanager.app",
+    "appId": "com.mughaldev.terminalmanager",
     "productName": "Terminal Manager",
+    "copyright": "Copyright © 2026 Zain Ali Mughal (Mughal.Dev)",
     "npmRebuild": false,
     "files": [
       "dist/**/*",
@@ -81,6 +82,10 @@
     },
     "win": {
       "icon": "build/icons/icon.ico",
+      "signtoolOptions": {
+        "publisherName": "Zain Ali Mughal (Mughal.Dev)"
+      },
+      "verifyUpdateCodeSignature": false,
       "target": [
         "nsis",
         "portable"
@@ -121,7 +126,7 @@
     "linux": {
       "icon": "build/icons",
       "category": "TerminalEmulator",
-      "maintainer": "MughalDev <devmughal8@gmail.com>",
+      "maintainer": "Zain Ali Mughal (Mughal.Dev) <devmughal8@gmail.com>",
       "target": [
         "AppImage",
         "deb"
