@@ -23,6 +23,8 @@ jobs:
   build:
     name: Build (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -66,7 +68,7 @@ jobs:
         run: npm run build
 
       - name: Package Application (electron-builder)
-        run: npx electron-builder ${{ matrix.target }}
+        run: npx electron-builder ${{ matrix.target }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false

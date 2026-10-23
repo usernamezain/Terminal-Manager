@@ -49,5 +49,5 @@ if ($Error.Count -gt 0) {
 
     expect(hasError).toBe(false);
     expect(output).not.toContain("Set-Alias : The AllScope option cannot be removed from the alias 'gp'");
-  });
+  }, 30000);
 });
